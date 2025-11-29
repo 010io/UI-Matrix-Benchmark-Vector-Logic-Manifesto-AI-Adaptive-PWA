@@ -99,7 +99,7 @@ class MemoryMonitor {
   }
 }
 
-// Export for use in app
 if (typeof module !== 'undefined' && module.exports) {
   module.exports = MemoryMonitor;
 }
+window.MemoryMonitor = MemoryMonitor;

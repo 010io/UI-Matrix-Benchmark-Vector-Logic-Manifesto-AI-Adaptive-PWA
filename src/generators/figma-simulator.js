@@ -191,7 +191,7 @@ class FigmaSimulator {
   }
 }
 
-// Export for use in benchmark
 if (typeof module !== 'undefined' && module.exports) {
   module.exports = FigmaSimulator;
 }
+window.FigmaSimulator = FigmaSimulator;

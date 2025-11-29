@@ -221,7 +221,7 @@ class BenchmarkEngine {
   }
 }
 
-// Export for use in app
 if (typeof module !== 'undefined' && module.exports) {
   module.exports = BenchmarkEngine;
 }
+window.BenchmarkEngine = BenchmarkEngine;

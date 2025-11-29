@@ -530,7 +530,7 @@ class VectorRenderer {
   }
 }
 
-// Export for use in app
 if (typeof module !== 'undefined' && module.exports) {
   module.exports = VectorRenderer;
 }
+window.VectorRenderer = VectorRenderer;

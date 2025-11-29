@@ -280,7 +280,9 @@ showpage`;
   }
 }
 
-// Export for use in app
 if (typeof module !== 'undefined' && module.exports) {
   module.exports = ExportEngine;
+}
+window.ExportEngine = ExportEngine; else if (typeof window !== 'undefined') {
+  window.ExportEngine = ExportEngine;
 }

@@ -75,7 +75,7 @@ class DomRenderer {
   }
 }
 
-// Export for use in benchmark
 if (typeof module !== 'undefined' && module.exports) {
   module.exports = DomRenderer;
 }
+window.DomRenderer = DomRenderer;

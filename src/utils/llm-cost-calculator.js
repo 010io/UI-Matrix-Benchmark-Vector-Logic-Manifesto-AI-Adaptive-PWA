@@ -153,7 +153,7 @@ class LLMCostCalculator {
   }
 }
 
-// Export for use in app
 if (typeof module !== 'undefined' && module.exports) {
   module.exports = LLMCostCalculator;
 }
+window.LLMCostCalculator = LLMCostCalculator;
