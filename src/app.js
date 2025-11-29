@@ -283,41 +283,76 @@ async function startSequentialChaos() {
 
     window.soundEffects?.playStart();
 
-  chaosElements.chaosButton.textContent = '📄 Testing DOM...';
-  chaosDOM.init('dom-arena', 'dom', count);
-  chaosDOM.start();
+    const diiaRenderer = new DiiaScreenRenderer();
+    const results = {};
 
-  await new Promise(resolve => setTimeout(resolve, 5000));
-  chaosDOM.stop();
+    // Test 1: DOM Rendering
+    chaosElements.chaosButton.textContent = '📄 Testing DOM...';
+    chaosElements.arena.innerHTML = `
+      <div style="padding: 20px; background: #0a0e27; border-radius: 12px; margin-bottom: 20px;">
+        <h3 style="color: #67C3F3; margin-bottom: 10px;">📄 DOM Rendering</h3>
+        <div id="dom-screen-preview" style="background: #1a1f3a; border-radius: 8px; padding: 10px; overflow-y: auto; max-height: 400px;"></div>
+        <div style="margin-top: 10px; font-size: 12px; color: #a1a1aa;" id="dom-screen-metrics"></div>
+      </div>
+    `;
+    
+    const domStart = performance.now();
+    const domHtml = diiaRenderer.renderDOM(1);
+    document.getElementById('dom-screen-preview').innerHTML = domHtml;
+    const domTime = performance.now() - domStart;
+    const domSize = new Blob([domHtml]).size;
+    document.getElementById('dom-screen-metrics').textContent = `⏱️ ${domTime.toFixed(2)}ms | 📦 ${(domSize / 1024).toFixed(2)}KB`;
+    results.dom = { time: domTime, size: domSize };
 
-  const domFps = chaosDOM.fpsMeter.fps;
-  const domJsTime = chaosDOM.fpsMeter.jsExecutionTimes.length > 0
-    ? chaosDOM.fpsMeter.jsExecutionTimes.reduce((a, b) => a + b, 0) / chaosDOM.fpsMeter.jsExecutionTimes.length
-    : 0;
+    await new Promise(resolve => setTimeout(resolve, 2000));
 
-  chaosHistory.add('dom', domFps, domJsTime, count);
+    // Test 2: Vector Rendering
+    chaosElements.chaosButton.textContent = '🎯 Testing Vector...';
+    chaosElements.arena.innerHTML += `
+      <div style="padding: 20px; background: #0a0e27; border-radius: 12px; margin-bottom: 20px;">
+        <h3 style="color: #67C3F3; margin-bottom: 10px;">🎯 Vector Rendering</h3>
+        <div id="vector-screen-preview" style="background: #1a1f3a; border-radius: 8px; padding: 10px; overflow-y: auto; max-height: 400px;"></div>
+        <div style="margin-top: 10px; font-size: 12px; color: #a1a1aa;" id="vector-screen-metrics"></div>
+      </div>
+    `;
+    
+    const vectorStart = performance.now();
+    const vectorSvg = diiaRenderer.renderVector(1);
+    document.getElementById('vector-screen-preview').innerHTML = vectorSvg;
+    const vectorTime = performance.now() - vectorStart;
+    const vectorSize = new Blob([vectorSvg]).size;
+    document.getElementById('vector-screen-metrics').textContent = `⏱️ ${vectorTime.toFixed(2)}ms | 📦 ${(vectorSize / 1024).toFixed(2)}KB`;
+    results.vector = { time: vectorTime, size: vectorSize };
 
-  chaosElements.chaosButton.textContent = '🎯 Testing Vector...';
-  chaosVector.init('vector-arena', 'vector', count);
-  chaosVector.start();
+    await new Promise(resolve => setTimeout(resolve, 2000));
 
-  await new Promise(resolve => setTimeout(resolve, 5000));
-  chaosVector.stop();
+    // Test 3: Figma Simulation
+    chaosElements.chaosButton.textContent = '🎨 Testing Figma...';
+    chaosElements.arena.innerHTML += `
+      <div style="padding: 20px; background: #0a0e27; border-radius: 12px;">
+        <h3 style="color: #67C3F3; margin-bottom: 10px;">🎨 Figma Export</h3>
+        <div id="figma-screen-preview" style="background: #1a1f3a; border-radius: 8px; padding: 10px; overflow-y: auto; max-height: 400px; font-family: monospace; font-size: 11px; color: #67C3F3;"></div>
+        <div style="margin-top: 10px; font-size: 12px; color: #a1a1aa;" id="figma-screen-metrics"></div>
+      </div>
+    `;
+    
+    const figmaStart = performance.now();
+    const figmaJson = diiaRenderer.renderFigma(1);
+    document.getElementById('figma-screen-preview').textContent = figmaJson.substring(0, 500) + '...';
+    const figmaTime = performance.now() - figmaStart;
+    const figmaSize = new Blob([figmaJson]).size;
+    document.getElementById('figma-screen-metrics').textContent = `⏱️ ${figmaTime.toFixed(2)}ms | 📦 ${(figmaSize / 1024).toFixed(2)}KB`;
+    results.figma = { time: figmaTime, size: figmaSize };
 
-  const vectorFps = chaosVector.fpsMeter.fps;
-  const vectorJsTime = chaosVector.fpsMeter.jsExecutionTimes.length > 0
-    ? chaosVector.fpsMeter.jsExecutionTimes.reduce((a, b) => a + b, 0) / chaosVector.fpsMeter.jsExecutionTimes.length
-    : 0;
+    await new Promise(resolve => setTimeout(resolve, 1000));
 
-  chaosHistory.add('vector', vectorFps, vectorJsTime, count);
-
-  const comparison = chaosHistory.getComparison();
-  if (comparison) {
     window.soundEffects?.playSuccess();
-    alert(`📊 CHAOS TEST COMPLETE\n\n📄 DOM: ${comparison.dom.fps} FPS (${comparison.dom.jsTime.toFixed(1)}ms JS)\n🎯 Vector: ${comparison.vector.fps} FPS (${comparison.vector.jsTime.toFixed(1)}ms JS)\n\n⚡ Vector is ${comparison.speedup}x faster!`);
-  }
+    const speedup = (results.dom.time / results.vector.time).toFixed(1);
+    const sizeReduction = ((results.dom.size - results.vector.size) / results.dom.size * 100).toFixed(0);
+    
+    alert(`📊 DIIA SCREEN RENDERING TEST\n\n📄 DOM: ${results.dom.time.toFixed(2)}ms (${(results.dom.size / 1024).toFixed(2)}KB)\n🎯 Vector: ${results.vector.time.toFixed(2)}ms (${(results.vector.size / 1024).toFixed(2)}KB)\n🎨 Figma: ${results.figma.time.toFixed(2)}ms (${(results.figma.size / 1024).toFixed(2)}KB)\n\n⚡ Vector is ${speedup}x faster and ${sizeReduction}% smaller!`);
 
-    chaosElements.chaosButton.textContent = '🌪️ Chaos Mode (10K Particles)';
+    chaosElements.chaosButton.textContent = '🌪️ Chaos Mode (Diia Screens)';
     chaosElements.chaosButton.disabled = false;
     chaosElements.stopButton.disabled = true;
     chaosRunning = false;
