@@ -1,6 +1,5 @@
 /**
- * Main Application Logic
- * Orchestrates benchmark execution and UI updates
+ * Main Application Logic - Updated with Sound Effects & Statistics
  */
 
 const vectorRenderer = new VectorRenderer();
@@ -21,7 +20,6 @@ const testProps = {
 let currentScale = 1.0;
 let cachedAIResults = null;
 let chaosRunning = false;
-let chaosTestMode = 'sequential'; // 'sequential' or 'replay'
 
 const elements = {
   vectorSize: document.getElementById('vector-size'),
@@ -57,12 +55,14 @@ function formatBytes(bytes) {
 elements.scaleSlider?.addEventListener('input', (e) => {
   currentScale = parseFloat(e.target.value);
   elements.scaleValue.textContent = `${currentScale.toFixed(1)}x`;
+  window.soundEffects?.playClick();
 });
 
 let benchmarkResults = null;
 
 elements.runBenchmark?.addEventListener('click', async () => {
   console.log('🚀 Starting comprehensive benchmark...');
+  window.soundEffects?.playStart();
   elements.runBenchmark.textContent = '⏳ Running...';
   elements.runBenchmark.disabled = true;
 
@@ -84,6 +84,7 @@ elements.runBenchmark?.addEventListener('click', async () => {
 
   updateMetrics(vectorAI, domAI, figmaAI);
   updateTable();
+  updateStatistics(vectorAI, domAI, figmaAI);
 
   cachedAIResults = { vectorAI, domAI, figmaAI };
 
@@ -94,10 +95,11 @@ elements.runBenchmark?.addEventListener('click', async () => {
   elements.efficiencyMultiplier.textContent = `${sizeRatio}x меншу вагу та ${tokenRatio}x менше токенів`;
 
   benchmarkEngine.generateReport();
+  window.soundEffects?.playSuccess();
 
   elements.runBenchmark.textContent = '✅ Benchmark Complete';
   setTimeout(() => {
-    elements.runBenchmark.textContent = '🚀 Run Benchmark';
+    elements.runBenchmark.textContent = '🚀 Запустити Benchmark';
     elements.runBenchmark.disabled = false;
   }, 2000);
 });
@@ -133,10 +135,38 @@ function updateTable() {
   document.getElementById('table-vector-tokens').textContent = vectorAI.estimatedTokens;
   document.getElementById('table-dom-tokens').textContent = domAI.estimatedTokens;
   document.getElementById('table-figma-tokens').textContent = figmaAI.estimatedTokens;
+
+  document.getElementById('table-vector-render').textContent = `${benchmarkResults.vector.single.time.toFixed(2)} ms`;
+  document.getElementById('table-dom-render').textContent = `${benchmarkResults.dom.single.time.toFixed(2)} ms`;
+  document.getElementById('table-figma-render').textContent = `${benchmarkResults.figma.single.time.toFixed(2)} ms`;
+}
+
+function updateStatistics(vectorAI, domAI, figmaAI) {
+  if (!benchmarkResults) return;
+
+  const vectorSize = benchmarkResults.vector.single.size;
+  const domSize = benchmarkResults.dom.single.size;
+  const figmaSize = benchmarkResults.figma.single.size;
+  
+  const totalSavings = (domSize + figmaSize - vectorSize * 2);
+  const renderSpeedup = (benchmarkResults.dom.single.time / benchmarkResults.vector.single.time).toFixed(1);
+  const aiEfficiency = ((vectorAI.aiFriendlyScore - domAI.aiFriendlyScore) / domAI.aiFriendlyScore * 100).toFixed(0);
+  const costSavings = ((domAI.estimatedTokens - vectorAI.estimatedTokens) * 0.015 / 1000).toFixed(2);
+
+  const dataSavingsEl = document.getElementById('data-savings');
+  const renderSpeedupEl = document.getElementById('render-speedup');
+  const aiEfficiencyEl = document.getElementById('ai-efficiency');
+  const costSavingsEl = document.getElementById('cost-savings');
+
+  if (dataSavingsEl) dataSavingsEl.textContent = `${(totalSavings / 1024).toFixed(1)} KB`;
+  if (renderSpeedupEl) renderSpeedupEl.textContent = `${renderSpeedup}x`;
+  if (aiEfficiencyEl) aiEfficiencyEl.textContent = `+${aiEfficiency}%`;
+  if (costSavingsEl) costSavingsEl.textContent = `$${costSavings}`;
 }
 
 elements.stressTest?.addEventListener('click', async () => {
   console.log('⚡ Running stress test...');
+  window.soundEffects?.playStart();
   elements.stressTest.textContent = '⏳ Testing...';
   elements.stressTest.disabled = true;
 
@@ -148,6 +178,7 @@ elements.stressTest?.addEventListener('click', async () => {
     figma: benchmarkEngine.stressTest((p) => figmaSimulator.render(p), 100, testProps)
   };
 
+  window.soundEffects?.playSuccess();
   alert(`Stress Test Complete!\n\nVector: ${stressResults.vector.totalTime.toFixed(0)}ms\nDOM: ${stressResults.dom.totalTime.toFixed(0)}ms\n\nVector is ${(stressResults.dom.totalTime / stressResults.vector.totalTime).toFixed(1)}x faster!`);
 
   elements.stressTest.textContent = '⚡ Stress Test (100x)';
@@ -232,7 +263,8 @@ async function startSequentialChaos() {
   chaosElements.chaosButton.disabled = true;
   chaosElements.stopButton.disabled = false;
 
-  // Run DOM for 5 seconds
+  window.soundEffects?.playStart();
+
   chaosElements.chaosButton.textContent = '📄 Testing DOM...';
   chaosDOM.init('dom-arena', 'dom', count);
   chaosDOM.start();
@@ -247,7 +279,6 @@ async function startSequentialChaos() {
 
   chaosHistory.add('dom', domFps, domJsTime, count);
 
-  // Run Vector for 5 seconds
   chaosElements.chaosButton.textContent = '🎯 Testing Vector...';
   chaosVector.init('vector-arena', 'vector', count);
   chaosVector.start();
@@ -262,13 +293,13 @@ async function startSequentialChaos() {
 
   chaosHistory.add('vector', vectorFps, vectorJsTime, count);
 
-  // Show comparison
   const comparison = chaosHistory.getComparison();
   if (comparison) {
+    window.soundEffects?.playSuccess();
     alert(`📊 CHAOS TEST COMPLETE\n\n📄 DOM: ${comparison.dom.fps} FPS (${comparison.dom.jsTime.toFixed(1)}ms JS)\n🎯 Vector: ${comparison.vector.fps} FPS (${comparison.vector.jsTime.toFixed(1)}ms JS)\n\n⚡ Vector is ${comparison.speedup}x faster!`);
   }
 
-  chaosElements.chaosButton.textContent = '🌪️ Start Chaos';
+  chaosElements.chaosButton.textContent = '🌪️ Chaos Mode (10K Particles)';
   chaosElements.chaosButton.disabled = false;
   chaosElements.stopButton.disabled = true;
   chaosRunning = false;
@@ -281,13 +312,23 @@ function stopChaosMode() {
 
   chaosElements.chaosButton.disabled = false;
   chaosElements.stopButton.disabled = true;
-  chaosElements.chaosButton.textContent = '🌪️ Start Chaos';
+  chaosElements.chaosButton.textContent = '🌪️ Chaos Mode (10K Particles)';
 
   console.log('🛑 Chaos mode stopped');
+}
+
+const themeToggle = document.getElementById('theme-toggle');
+if (themeToggle) {
+  themeToggle.addEventListener('click', () => {
+    document.documentElement.style.colorScheme = 
+      document.documentElement.style.colorScheme === 'light' ? 'dark' : 'light';
+    window.soundEffects?.playClick();
+  });
 }
 
 window.addEventListener('load', () => {
   console.log('🎯 Vector Logic Manifesto initialized');
   console.log('💡 Click "Run Benchmark" to see the comparison');
   console.log('🌪️ Click "Start Chaos" for sequential performance test');
+  window.soundEffects?.playComplete();
 });
