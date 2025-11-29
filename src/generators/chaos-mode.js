@@ -8,7 +8,7 @@
 
 class ChaosMode {
   constructor() {
-    this.particleCount = 10000;
+    this.particleCount = 2000; // Reduced from 10000 for better default performance
     this.particles = [];
     this.animationFrameId = null;
     this.isRunning = false;
@@ -52,19 +52,34 @@ class ChaosMode {
    * Update particle positions
    */
   updateParticles(width, height) {
+    const r = this.particleSize; // Radius
+    
     for (let particle of this.particles) {
       // Update position
       particle.x += particle.vx;
       particle.y += particle.vy;
       
-      // Bounce off walls
-      if (particle.x < 0 || particle.x > width) {
+      // Bounce off walls (taking radius into account)
+      // Left wall
+      if (particle.x < r) {
+        particle.x = r;
         particle.vx *= -1;
-        particle.x = Math.max(0, Math.min(width, particle.x));
       }
-      if (particle.y < 0 || particle.y > height) {
+      // Right wall
+      else if (particle.x > width - r) {
+        particle.x = width - r;
+        particle.vx *= -1;
+      }
+      
+      // Top wall
+      if (particle.y < r) {
+        particle.y = r;
         particle.vy *= -1;
-        particle.y = Math.max(0, Math.min(height, particle.y));
+      }
+      // Bottom wall
+      else if (particle.y > height - r) {
+        particle.y = height - r;
+        particle.vy *= -1;
       }
     }
   }
@@ -82,6 +97,7 @@ class ChaosMode {
     container.style.background = '#0a0e27';
     
     // Create divs for each particle
+    const fragment = document.createDocumentFragment();
     for (let particle of this.particles) {
       const div = document.createElement('div');
       div.style.position = 'absolute';
@@ -92,8 +108,12 @@ class ChaosMode {
       div.style.borderRadius = '50%';
       div.style.backgroundColor = particle.color;
       div.style.pointerEvents = 'none';
-      container.appendChild(div);
+      // Optimization: use transform instead of left/top for smoother DOM (still slow due to count)
+      // div.style.transform = `translate(${particle.x}px, ${particle.y}px)`; 
+      // Sticking to left/top to demonstrate "bad" DOM performance
+      fragment.appendChild(div);
     }
+    container.appendChild(fragment);
   }
   
   /**
@@ -105,14 +125,15 @@ class ChaosMode {
     
     for (let i = 0; i < this.particles.length; i++) {
       if (divs[i]) {
-        divs[i].style.left = this.particles[i].x + 'px';
-        divs[i].style.top = this.particles[i].y + 'px';
+        divs[i].style.left = (this.particles[i].x - this.particleSize) + 'px';
+        divs[i].style.top = (this.particles[i].y - this.particleSize) + 'px';
       }
     }
   }
   
   /**
-   * Vector Implementation - Single SVG with path (FAST)
+   * Vector Implementation - Single SVG with Path (FAST)
+   * Using a single <path> element is significantly faster than thousands of <circle> elements
    */
   renderVector(container, width, height) {
     container.innerHTML = '';
@@ -126,23 +147,27 @@ class ChaosMode {
     svg.setAttribute('viewBox', `0 0 ${width} ${height}`);
     svg.style.background = '#0a0e27';
     
-    // Group all particles
-    const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
-    g.id = 'particles';
+    // Create a single path for all particles
+    // Note: We can only use one color for a single path. 
+    // For multi-color, we'd need one path per color group.
+    // To keep it simple and fast, we'll use Diia Blue for all in Vector mode,
+    // or create a few groups. Let's do groups for parity.
     
-    // Build path string (ultra-fast)
-    let circles = '';
-    for (let particle of this.particles) {
-      circles += `<circle cx="${particle.x}" cy="${particle.y}" r="${this.particleSize}" fill="${particle.color}"/>`;
-    }
+    const colors = ['#67C3F3', '#5ab3e3', '#4aa3d3', '#3a93c3', '#2a83b3'];
     
-    g.innerHTML = circles;
-    svg.appendChild(g);
+    colors.forEach(color => {
+        const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+        path.setAttribute('fill', color);
+        path.setAttribute('id', `particles-${color.replace('#', '')}`);
+        svg.appendChild(path);
+    });
+    
     container.appendChild(svg);
+    this.updateVector(container, width, height);
   }
   
   /**
-   * Update vector particles (modify SVG)
+   * Update vector particles (modify SVG Path d attributes)
    */
   updateVector(container, width, height) {
     this.updateParticles(width, height);
@@ -150,15 +175,28 @@ class ChaosMode {
     const svg = container.querySelector('svg');
     if (!svg) return;
     
-    const g = svg.querySelector('#particles');
-    if (!g) return;
+    // Group particles by color to build paths
+    const paths = {};
+    const colors = ['#67C3F3', '#5ab3e3', '#4aa3d3', '#3a93c3', '#2a83b3'];
+    colors.forEach(c => paths[c] = '');
     
-    // Rebuild circles (still faster than DOM manipulation)
-    let circles = '';
+    // Build path data: M x,y h 3 v 3 h -3 z (rectangles are faster than circles in path)
+    // Or use M x,y l 0.1 0 for stroke-cap round dots (if stroke is used)
+    // Let's use small rects for speed: M x y h s v s h -s z
+    const s = this.particleSize;
+    
     for (let particle of this.particles) {
-      circles += `<circle cx="${particle.x}" cy="${particle.y}" r="${this.particleSize}" fill="${particle.color}"/>`;
+        // Simple rect shape
+        paths[particle.color] += `M${Math.round(particle.x)} ${Math.round(particle.y)}h${s}v${s}h-${s}z`;
     }
-    g.innerHTML = circles;
+    
+    // Update DOM once per color
+    for (let color of colors) {
+        const pathEl = svg.querySelector(`#particles-${color.replace('#', '')}`);
+        if (pathEl) {
+            pathEl.setAttribute('d', paths[color]);
+        }
+    }
   }
   
   /**
