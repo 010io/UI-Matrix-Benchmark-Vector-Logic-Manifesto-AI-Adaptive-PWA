@@ -7,6 +7,7 @@ class FPSMeter {
     this.lastFrameTime = performance.now();
     this.frameTimes = [];
     this.maxSamples = 60;
+    this.jsExecutionTimes = [];
   }
 
   tick() {
@@ -28,19 +29,30 @@ class FPSMeter {
       
       const avgFrameTime = this.frameTimes.reduce((a, b) => a + b, 0) / this.frameTimes.length;
       const maxFrameTime = Math.max(...this.frameTimes);
+      const avgJsTime = this.jsExecutionTimes.length > 0 
+        ? this.jsExecutionTimes.reduce((a, b) => a + b, 0) / this.jsExecutionTimes.length 
+        : 0;
       
       let color = '#00ff00';
       if (avgFrameTime > 16.67) color = '#fbbf24';
       if (avgFrameTime > 33.33) color = '#f87171';
       
       if (this.display) {
-        this.display.textContent = `${this.fps} FPS (${avgFrameTime.toFixed(1)}ms)`;
+        this.display.textContent = `${this.fps} FPS (${avgFrameTime.toFixed(1)}ms) [JS: ${avgJsTime.toFixed(1)}ms]`;
         this.display.style.color = color;
-        this.display.title = `Max frame: ${maxFrameTime.toFixed(1)}ms`;
+        this.display.title = `Max frame: ${maxFrameTime.toFixed(1)}ms | Avg JS: ${avgJsTime.toFixed(1)}ms`;
       }
       
       this.frames = 0;
       this.lastTime = now;
+      this.jsExecutionTimes = [];
+    }
+  }
+
+  recordJsTime(duration) {
+    this.jsExecutionTimes.push(duration);
+    if (this.jsExecutionTimes.length > 60) {
+      this.jsExecutionTimes.shift();
     }
   }
 

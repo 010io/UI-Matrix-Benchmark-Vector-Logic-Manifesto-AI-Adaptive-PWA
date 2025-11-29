@@ -20,7 +20,6 @@ class ChaosMode {
     this.dBuffer = null;
   }
 
-  // Initialize with real FPS meter
   init(containerId, type, count = 1000) {
     this.container = document.getElementById(containerId);
     if (!this.container) {
@@ -38,7 +37,7 @@ class ChaosMode {
     if (typeof FPSMeter !== 'undefined') {
       this.fpsMeter = new FPSMeter(fpsDisplayId);
     } else {
-      this.fpsMeter = { tick: () => { }, getFPS: () => 0 };
+      this.fpsMeter = { tick: () => { }, getFPS: () => 0, recordJsTime: () => {} };
     }
 
     for (let i = 0; i < count; i++) {
@@ -58,7 +57,6 @@ class ChaosMode {
     this.container.innerHTML = '';
 
     if (this.rendererType === 'dom') {
-      // DOM: Create thousands of DIVs. This kills the browser.
       const fragment = document.createDocumentFragment();
       this.particles.forEach(p => {
         const el = document.createElement('div');
@@ -67,7 +65,6 @@ class ChaosMode {
         el.style.height = '4px';
         el.style.background = p.color;
         el.style.borderRadius = '50%';
-        // Use translate3d for GPU acceleration
         el.style.transform = `translate3d(${p.x}px, ${p.y}px, 0)`;
         p.element = el;
         fragment.appendChild(el);
@@ -75,7 +72,6 @@ class ChaosMode {
       this.container.appendChild(fragment);
 
     } else {
-      // VECTOR: Single SVG Path.
       this.container.innerHTML = `<svg width="100%" height="100%" viewBox="0 0 ${this.width} ${this.height}" style="overflow: visible;">
         <path id="chaos-path-${this.rendererType}" fill="none" stroke="#67C3F3" stroke-width="4" stroke-linecap="round" />
       </svg>`;
@@ -87,7 +83,7 @@ class ChaosMode {
     if (this.animationId) return;
 
     const update = () => {
-      if (this.fpsMeter) this.fpsMeter.tick();
+      const jsStart = performance.now();
 
       const particleCount = this.particles.length;
       const w = this.width;
@@ -108,7 +104,7 @@ class ChaosMode {
             p.element.style.transform = `translate3d(${p.x}px, ${p.y}px, 0)`;
           }
         }
-        this.container.offsetHeight;
+        const _reflow = this.container.offsetHeight;
       } else {
         if (this.pathElement) {
           for (let i = 0; i < particleCount; i++) {
@@ -117,6 +113,14 @@ class ChaosMode {
           }
           this.pathElement.setAttribute('d', this.dBuffer.join(' '));
         }
+      }
+
+      const jsEnd = performance.now();
+      const jsTime = jsEnd - jsStart;
+
+      if (this.fpsMeter) {
+        this.fpsMeter.tick();
+        this.fpsMeter.recordJsTime(jsTime);
       }
 
       this.animationId = requestAnimationFrame(update);
