@@ -62,17 +62,23 @@ let benchmarkResults = null;
 
 elements.runBenchmark?.addEventListener('click', async () => {
   console.log('🚀 Starting comprehensive benchmark...');
-  window.soundEffects?.playStart();
-  elements.runBenchmark.textContent = '⏳ Running...';
-  elements.runBenchmark.disabled = true;
+  try {
+    window.soundEffects?.playStart();
+    elements.runBenchmark.textContent = '⏳ Running...';
+    elements.runBenchmark.disabled = true;
 
-  await new Promise(resolve => setTimeout(resolve, 100));
+    await new Promise(resolve => setTimeout(resolve, 100));
 
-  benchmarkResults = benchmarkEngine.runBenchmark({
-    vector: vectorRenderer,
-    dom: domRenderer,
-    figma: figmaSimulator
-  }, testProps);
+    if (!benchmarkEngine || !vectorRenderer || !domRenderer || !figmaSimulator) {
+      console.error('❌ Renderers not initialized');
+      throw new Error('Renderers not ready');
+    }
+
+    benchmarkResults = benchmarkEngine.runBenchmark({
+      vector: vectorRenderer,
+      dom: domRenderer,
+      figma: figmaSimulator
+    }, testProps);
 
   const vectorOutput = vectorRenderer.render(testProps, currentScale);
   const domOutput = domRenderer.render(testProps, currentScale);
@@ -94,14 +100,19 @@ elements.runBenchmark?.addEventListener('click', async () => {
   const tokenRatio = (domAI.estimatedTokens / vectorTokens).toFixed(1);
   elements.efficiencyMultiplier.textContent = `${sizeRatio}x меншу вагу та ${tokenRatio}x менше токенів`;
 
-  benchmarkEngine.generateReport();
-  window.soundEffects?.playSuccess();
+    benchmarkEngine.generateReport();
+    window.soundEffects?.playSuccess();
 
-  elements.runBenchmark.textContent = '✅ Benchmark Complete';
-  setTimeout(() => {
-    elements.runBenchmark.textContent = '🚀 Запустити Benchmark';
+    elements.runBenchmark.textContent = '✅ Benchmark Complete';
+    setTimeout(() => {
+      elements.runBenchmark.textContent = '🚀 Запустити Benchmark';
+      elements.runBenchmark.disabled = false;
+    }, 2000);
+  } catch (err) {
+    console.error('❌ Benchmark error:', err);
+    elements.runBenchmark.textContent = '❌ Error';
     elements.runBenchmark.disabled = false;
-  }, 2000);
+  }
 });
 
 function updateMetrics(vectorAI, domAI, figmaAI) {
@@ -166,23 +177,29 @@ function updateStatistics(vectorAI, domAI, figmaAI) {
 
 elements.stressTest?.addEventListener('click', async () => {
   console.log('⚡ Running stress test...');
-  window.soundEffects?.playStart();
-  elements.stressTest.textContent = '⏳ Testing...';
-  elements.stressTest.disabled = true;
+  try {
+    window.soundEffects?.playStart();
+    elements.stressTest.textContent = '⏳ Testing...';
+    elements.stressTest.disabled = true;
 
-  await new Promise(resolve => setTimeout(resolve, 100));
+    await new Promise(resolve => setTimeout(resolve, 100));
 
-  const stressResults = {
-    vector: benchmarkEngine.stressTest((p) => vectorRenderer.render(p), 100, testProps),
-    dom: benchmarkEngine.stressTest((p) => domRenderer.render(p), 100, testProps),
-    figma: benchmarkEngine.stressTest((p) => figmaSimulator.render(p), 100, testProps)
-  };
+    const stressResults = {
+      vector: benchmarkEngine.stressTest((p) => vectorRenderer.render(p), 100, testProps),
+      dom: benchmarkEngine.stressTest((p) => domRenderer.render(p), 100, testProps),
+      figma: benchmarkEngine.stressTest((p) => figmaSimulator.render(p), 100, testProps)
+    };
 
-  window.soundEffects?.playSuccess();
-  alert(`Stress Test Complete!\n\nVector: ${stressResults.vector.totalTime.toFixed(0)}ms\nDOM: ${stressResults.dom.totalTime.toFixed(0)}ms\n\nVector is ${(stressResults.dom.totalTime / stressResults.vector.totalTime).toFixed(1)}x faster!`);
+    window.soundEffects?.playSuccess();
+    alert(`Stress Test Complete!\n\nVector: ${stressResults.vector.totalTime.toFixed(0)}ms\nDOM: ${stressResults.dom.totalTime.toFixed(0)}ms\n\nVector is ${(stressResults.dom.totalTime / stressResults.vector.totalTime).toFixed(1)}x faster!`);
 
-  elements.stressTest.textContent = '⚡ Stress Test (100x)';
-  elements.stressTest.disabled = false;
+    elements.stressTest.textContent = '⚡ Stress Test (100x)';
+    elements.stressTest.disabled = false;
+  } catch (err) {
+    console.error('❌ Stress test error:', err);
+    elements.stressTest.textContent = '❌ Error';
+    elements.stressTest.disabled = false;
+  }
 });
 
 elements.exportTest?.addEventListener('click', () => {
@@ -257,13 +274,14 @@ async function startSequentialChaos() {
   if (chaosRunning) return;
   chaosRunning = true;
 
-  const particleSlider = document.getElementById('particle-count');
-  const count = particleSlider ? parseInt(particleSlider.value) : 2000;
+  try {
+    const particleSlider = document.getElementById('particle-count');
+    const count = particleSlider ? parseInt(particleSlider.value) : 2000;
 
-  chaosElements.chaosButton.disabled = true;
-  chaosElements.stopButton.disabled = false;
+    chaosElements.chaosButton.disabled = true;
+    chaosElements.stopButton.disabled = false;
 
-  window.soundEffects?.playStart();
+    window.soundEffects?.playStart();
 
   chaosElements.chaosButton.textContent = '📄 Testing DOM...';
   chaosDOM.init('dom-arena', 'dom', count);
@@ -299,10 +317,16 @@ async function startSequentialChaos() {
     alert(`📊 CHAOS TEST COMPLETE\n\n📄 DOM: ${comparison.dom.fps} FPS (${comparison.dom.jsTime.toFixed(1)}ms JS)\n🎯 Vector: ${comparison.vector.fps} FPS (${comparison.vector.jsTime.toFixed(1)}ms JS)\n\n⚡ Vector is ${comparison.speedup}x faster!`);
   }
 
-  chaosElements.chaosButton.textContent = '🌪️ Chaos Mode (10K Particles)';
-  chaosElements.chaosButton.disabled = false;
-  chaosElements.stopButton.disabled = true;
-  chaosRunning = false;
+    chaosElements.chaosButton.textContent = '🌪️ Chaos Mode (10K Particles)';
+    chaosElements.chaosButton.disabled = false;
+    chaosElements.stopButton.disabled = true;
+    chaosRunning = false;
+  } catch (err) {
+    console.error('❌ Chaos mode error:', err);
+    chaosRunning = false;
+    chaosElements.chaosButton.disabled = false;
+    chaosElements.stopButton.disabled = true;
+  }
 }
 
 function stopChaosMode() {
@@ -315,6 +339,66 @@ function stopChaosMode() {
   chaosElements.chaosButton.textContent = '🌪️ Chaos Mode (10K Particles)';
 
   console.log('🛑 Chaos mode stopped');
+}
+
+// Responsive Test
+const responsiveTestBtn = document.getElementById('responsive-test');
+if (responsiveTestBtn) {
+  responsiveTestBtn.addEventListener('click', async () => {
+    window.soundEffects?.playStart();
+    responsiveTestBtn.textContent = '⏳ Testing...';
+    responsiveTestBtn.disabled = true;
+
+    await new Promise(resolve => setTimeout(resolve, 100));
+
+    const tester = new ResponsiveTester(vectorRenderer, domRenderer);
+    const results = tester.testAllBreakpoints(testProps);
+    const report = tester.generateReport(results);
+    
+    console.log(report);
+    window.soundEffects?.playSuccess();
+    alert(report);
+
+    responsiveTestBtn.textContent = '📱 Responsive Test';
+    responsiveTestBtn.disabled = false;
+  });
+}
+
+// Export Results
+const exportResultsBtn = document.getElementById('export-results');
+if (exportResultsBtn) {
+  exportResultsBtn.addEventListener('click', () => {
+    window.soundEffects?.playClick();
+    const results = {
+      timestamp: new Date().toISOString(),
+      vector: {
+        size: document.getElementById('vector-size')?.textContent,
+        time: document.getElementById('vector-time')?.textContent,
+        aiScore: document.getElementById('vector-ai-score')?.textContent,
+        tokens: document.getElementById('vector-tokens')?.textContent
+      },
+      dom: {
+        size: document.getElementById('dom-size')?.textContent,
+        time: document.getElementById('dom-time')?.textContent,
+        aiScore: document.getElementById('dom-ai-score')?.textContent,
+        tokens: document.getElementById('dom-tokens')?.textContent
+      },
+      figma: {
+        size: document.getElementById('figma-size')?.textContent,
+        time: document.getElementById('figma-time')?.textContent,
+        aiScore: document.getElementById('figma-ai-score')?.textContent,
+        tokens: document.getElementById('figma-tokens')?.textContent
+      }
+    };
+
+    const blob = new Blob([JSON.stringify(results, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `benchmark-results-${Date.now()}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+  });
 }
 
 const themeToggle = document.getElementById('theme-toggle');
