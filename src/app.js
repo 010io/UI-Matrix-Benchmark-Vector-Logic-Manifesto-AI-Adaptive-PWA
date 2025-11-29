@@ -330,21 +330,22 @@ function startChaosMode() {
     console.log('  DOM: Individual <div> elements');
     console.log('  Vector: Single <svg> with optimized rendering');
   }
+}
 
-  function stopChaosMode() {
-    chaosRunning = false;
-    chaosDOM.stop();
-    chaosVector.stop();
+function stopChaosMode() {
+  chaosRunning = false;
+  chaosDOM.stop();
+  chaosVector.stop();
 
-    if (chaosElements.chaosButton) chaosElements.chaosButton.disabled = false;
-    if (chaosElements.stopButton) chaosElements.stopButton.disabled = true;
+  if (chaosElements.chaosButton) chaosElements.chaosButton.disabled = false;
+  if (chaosElements.stopButton) chaosElements.stopButton.disabled = true;
 
-    console.log('🛑 Chaos mode stopped');
-  }
+  console.log('🛑 Chaos mode stopped');
+}
 
-  // Auto-run benchmark on load
-  window.addEventListener('load', () => {
-    console.log('🎯 Vector Logic Manifesto initialized');
-    console.log('💡 Click "Run Benchmark" to see the comparison');
-    console.log('🌪️ Click "Start Chaos" for the ultimate performance showdown');
-  });
+// Auto-run benchmark on load
+window.addEventListener('load', () => {
+  console.log('🎯 Vector Logic Manifesto initialized');
+  console.log('💡 Click "Run Benchmark" to see the comparison');
+  console.log('🌪️ Click "Start Chaos" for the ultimate performance showdown');
+});

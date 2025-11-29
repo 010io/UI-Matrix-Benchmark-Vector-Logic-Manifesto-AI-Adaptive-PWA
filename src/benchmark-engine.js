@@ -13,7 +13,7 @@ class BenchmarkEngine {
       figma: {}
     };
   }
-  
+
   /**
    * Calculate payload size in bytes
    * @param {string} content - Content to measure
@@ -22,7 +22,7 @@ class BenchmarkEngine {
   calculatePayload(content) {
     return new Blob([content]).size;
   }
-  
+
   /**
    * Format bytes to human-readable format
    * @param {number} bytes - Byte count
@@ -33,25 +33,47 @@ class BenchmarkEngine {
     if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(2)} KB`;
     return `${(bytes / (1024 * 1024)).toFixed(2)} MB`;
   }
-  
-  /**
-   * Measure render speed
-   * @param {Function} renderFn - Rendering function
-   * @param {Object} props - Props to pass to renderer
-   * @returns {Object} Performance metrics
-   */
+
   measureRenderSpeed(renderFn, props = {}) {
+    const sandbox = document.getElementById('benchmark-sandbox');
+    if (!sandbox) {
+      console.warn('⚠️ Benchmark sandbox not found! Results may be inaccurate.');
+    } else {
+      sandbox.innerHTML = ''; // Clear previous content
+    }
+
     const start = performance.now();
+
+    // 1. Generation
     const output = renderFn(props);
+
+    // 2. Injection & Layout (The Real Cost)
+    if (sandbox) {
+      if (typeof output === 'string') {
+        sandbox.innerHTML = output;
+      } else if (output instanceof Node) {
+        sandbox.appendChild(output);
+      }
+
+      // 3. Force Layout / Reflow
+      // Accessing offsetHeight forces the browser to calculate layout immediately
+      const _forceReflow = sandbox.offsetHeight;
+    }
+
     const end = performance.now();
-    
+
+    // Cleanup
+    if (sandbox) {
+      sandbox.innerHTML = '';
+    }
+
     return {
       time: end - start,
       output: output,
       size: this.calculatePayload(output)
     };
   }
-  
+
   /**
    * Stress test: render multiple instances
    * @param {Function} renderFn - Rendering function
@@ -62,14 +84,14 @@ class BenchmarkEngine {
   stressTest(renderFn, count = 1000, props = {}) {
     const start = performance.now();
     let totalSize = 0;
-    
+
     for (let i = 0; i < count; i++) {
       const output = renderFn(props);
       totalSize += this.calculatePayload(output);
     }
-    
+
     const end = performance.now();
-    
+
     return {
       totalTime: end - start,
       avgTime: (end - start) / count,
@@ -78,7 +100,7 @@ class BenchmarkEngine {
       count: count
     };
   }
-  
+
   /**
    * Run complete benchmark suite
    * @param {Object} renderers - Object with vector, dom, figma renderers
@@ -87,7 +109,7 @@ class BenchmarkEngine {
    */
   runBenchmark(renderers, props = {}) {
     console.log('🚀 Starting benchmark...');
-    
+
     // Single render test
     console.log('📊 Single Render Test...');
     this.results.vector.single = this.measureRenderSpeed(
@@ -102,7 +124,7 @@ class BenchmarkEngine {
       (p) => renderers.figma.render(p),
       props
     );
-    
+
     // Stress test (100 iterations for speed)
     console.log('⚡ Stress Test (100 iterations)...');
     this.results.vector.stress = this.stressTest(
@@ -120,21 +142,21 @@ class BenchmarkEngine {
       100,
       props
     );
-    
+
     // Calculate efficiency multipliers
     this.calculateEfficiency();
-    
+
     console.log('✅ Benchmark complete!');
     return this.results;
   }
-  
+
   /**
    * Calculate efficiency multipliers (Vector vs others)
    */
   calculateEfficiency() {
     const vectorSize = this.results.vector.single.size;
     const vectorTime = this.results.vector.single.time;
-    
+
     this.results.efficiency = {
       sizeVsDom: (this.results.dom.single.size / vectorSize).toFixed(2),
       sizeVsFigma: (this.results.figma.single.size / vectorSize).toFixed(2),
@@ -142,14 +164,14 @@ class BenchmarkEngine {
       speedVsFigma: (this.results.figma.single.time / vectorTime).toFixed(2)
     };
   }
-  
+
   /**
    * Update dashboard with results
    * @param {Object} elements - DOM elements to update
    */
   updateDashboard(elements) {
     if (!this.results.vector.single) return;
-    
+
     // Vector metrics
     if (elements.vectorSize) {
       elements.vectorSize.textContent = this.formatBytes(this.results.vector.single.size);
@@ -157,7 +179,7 @@ class BenchmarkEngine {
     if (elements.vectorTime) {
       elements.vectorTime.textContent = `${this.results.vector.single.time.toFixed(2)} ms`;
     }
-    
+
     // DOM metrics
     if (elements.domSize) {
       elements.domSize.textContent = this.formatBytes(this.results.dom.single.size);
@@ -165,7 +187,7 @@ class BenchmarkEngine {
     if (elements.domTime) {
       elements.domTime.textContent = `${this.results.dom.single.time.toFixed(2)} ms`;
     }
-    
+
     // Figma metrics
     if (elements.figmaSize) {
       elements.figmaSize.textContent = this.formatBytes(this.results.figma.single.size);
@@ -173,7 +195,7 @@ class BenchmarkEngine {
     if (elements.figmaTime) {
       elements.figmaTime.textContent = `${this.results.figma.single.time.toFixed(2)} ms`;
     }
-    
+
     // Efficiency multipliers
     if (elements.efficiencySize && this.results.efficiency) {
       elements.efficiencySize.textContent = `${this.results.efficiency.sizeVsDom}x smaller`;
@@ -181,11 +203,11 @@ class BenchmarkEngine {
     if (elements.efficiencySpeed && this.results.efficiency) {
       elements.efficiencySpeed.textContent = `${this.results.efficiency.speedVsDom}x faster`;
     }
-    
+
     // Highlight winner (always Vector for this demo)
     this.highlightWinner(elements);
   }
-  
+
   /**
    * Highlight the winning approach
    * @param {Object} elements - DOM elements
@@ -193,12 +215,12 @@ class BenchmarkEngine {
   highlightWinner(elements) {
     // Add winner class to vector metrics
     const winnerClass = 'metric-winner';
-    
+
     if (elements.vectorSize?.parentElement) {
       elements.vectorSize.parentElement.classList.add(winnerClass);
     }
   }
-  
+
   /**
    * Generate console report
    */
