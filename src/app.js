@@ -401,6 +401,36 @@ if (exportResultsBtn) {
   });
 }
 
+// Migration Guide & Screenshot Gallery
+const guideBtn = document.createElement('button');
+guideBtn.id = 'show-guide';
+guideBtn.className = 'btn-secondary';
+guideBtn.textContent = '📚 Migration Guide';
+guideBtn.style.marginTop = '12px';
+guideBtn.addEventListener('click', () => {
+  window.soundEffects?.playClick();
+  window.MigrationGuide?.showGuide();
+});
+
+const galleryBtn = document.createElement('button');
+galleryBtn.id = 'show-gallery';
+galleryBtn.className = 'btn-secondary';
+galleryBtn.textContent = '📱 Device Comparison';
+galleryBtn.style.marginTop = '12px';
+galleryBtn.addEventListener('click', () => {
+  window.soundEffects?.playClick();
+  window.ScreenshotGallery?.showGallery();
+});
+
+const controlPanel = document.querySelector('.control-panel');
+if (controlPanel) {
+  const controlsGrid = controlPanel.querySelector('.controls-grid');
+  if (controlsGrid) {
+    controlsGrid.parentElement.insertBefore(guideBtn, controlsGrid.nextSibling);
+    controlsGrid.parentElement.insertBefore(galleryBtn, guideBtn.nextSibling);
+  }
+}
+
 const themeToggle = document.getElementById('theme-toggle');
 if (themeToggle) {
   themeToggle.addEventListener('click', () => {

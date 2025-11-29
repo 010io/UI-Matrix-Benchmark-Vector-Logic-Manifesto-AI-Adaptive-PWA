@@ -1,0 +1,241 @@
+/* Migration Guide Styles */
+
+.guide-modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2000;
+  padding: 20px;
+}
+
+.guide-modal-content {
+  background: var(--diia-bg-card);
+  border: 1px solid var(--diia-border);
+  border-radius: var(--radius-lg);
+  max-width: 1400px;
+  max-height: 90vh;
+  overflow-y: auto;
+  padding: 30px;
+  position: relative;
+}
+
+.guide-close {
+  position: absolute;
+  top: 15px;
+  right: 15px;
+  background: transparent;
+  border: none;
+  color: var(--diia-text);
+  font-size: 24px;
+  cursor: pointer;
+  transition: all var(--duration-base) var(--easing);
+}
+
+.guide-close:hover {
+  transform: scale(1.2);
+  color: var(--diia-primary);
+}
+
+.guide-modal-content h2 {
+  color: var(--diia-primary);
+  margin-bottom: 30px;
+  font-size: 24px;
+}
+
+.migration-container {
+  display: flex;
+  flex-direction: column;
+  gap: 40px;
+}
+
+/* Approaches Section */
+.approaches-section h3,
+.comparison-section h3 {
+  color: var(--diia-primary);
+  font-size: 18px;
+  margin-bottom: 20px;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+}
+
+.approaches-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+  gap: 20px;
+}
+
+.approach-card {
+  background: linear-gradient(135deg, rgba(103, 195, 243, 0.05) 0%, transparent 100%);
+  border: 1px solid var(--diia-border);
+  border-radius: var(--radius-md);
+  padding: 20px;
+  transition: all var(--duration-base) var(--easing);
+}
+
+.approach-card:hover {
+  border-color: var(--diia-primary);
+  box-shadow: 0 0 20px rgba(103, 195, 243, 0.2);
+  transform: translateY(-4px);
+}
+
+.approach-header {
+  font-weight: 700;
+  color: var(--diia-primary);
+  margin-bottom: 10px;
+  font-size: 16px;
+}
+
+.approach-desc {
+  font-size: 13px;
+  color: var(--diia-text-secondary);
+  margin-bottom: 15px;
+}
+
+.approach-tools,
+.approach-pros,
+.approach-cons,
+.approach-usecase,
+.approach-examples {
+  margin-bottom: 12px;
+  font-size: 12px;
+}
+
+.approach-tools strong,
+.approach-pros strong,
+.approach-cons strong,
+.approach-usecase strong,
+.approach-examples strong {
+  color: var(--diia-primary);
+  display: block;
+  margin-bottom: 6px;
+}
+
+.tools-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.tool-tag {
+  background: rgba(103, 195, 243, 0.1);
+  border: 1px solid var(--diia-border);
+  color: var(--diia-primary);
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.approach-pros ul,
+.approach-cons ul {
+  list-style: none;
+  padding-left: 0;
+}
+
+.approach-pros li,
+.approach-cons li {
+  color: var(--diia-text-secondary);
+  margin-bottom: 4px;
+  padding-left: 16px;
+  position: relative;
+}
+
+.approach-pros li:before {
+  content: '✅';
+  position: absolute;
+  left: 0;
+}
+
+.approach-cons li:before {
+  content: '⚠️';
+  position: absolute;
+  left: 0;
+}
+
+.approach-usecase p {
+  color: var(--diia-text-secondary);
+  margin: 0;
+}
+
+.approach-examples code {
+  display: block;
+  background: rgba(0, 0, 0, 0.3);
+  padding: 8px;
+  border-radius: 4px;
+  font-size: 11px;
+  color: var(--diia-text-secondary);
+  font-family: 'Roboto Mono', monospace;
+  overflow-x: auto;
+  white-space: pre-wrap;
+  word-break: break-all;
+  margin-bottom: 6px;
+}
+
+/* Comparison Table */
+.comparison-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+.comparison-table th {
+  background: rgba(103, 195, 243, 0.1);
+  padding: 12px;
+  text-align: left;
+  border-bottom: 2px solid var(--diia-border);
+  color: var(--diia-primary);
+  font-weight: 600;
+}
+
+.comparison-table td {
+  padding: 12px;
+  border-bottom: 1px solid var(--diia-border);
+  color: var(--diia-text-secondary);
+}
+
+.comparison-table tr:hover {
+  background: rgba(103, 195, 243, 0.05);
+}
+
+.vector-cell {
+  color: var(--diia-success);
+  font-weight: 600;
+}
+
+.dom-cell {
+  color: var(--diia-text-secondary);
+}
+
+.figma-cell {
+  color: var(--diia-error);
+}
+
+@media (max-width: 768px) {
+  .guide-modal-content {
+    padding: 20px;
+    max-height: 95vh;
+  }
+
+  .approaches-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .guide-modal-content h2 {
+    font-size: 18px;
+  }
+
+  .comparison-table {
+    font-size: 11px;
+  }
+
+  .comparison-table th,
+  .comparison-table td {
+    padding: 8px;
+  }
+}
