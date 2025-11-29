@@ -1,46 +1,159 @@
 /**
- * Vector Renderer - Mathematical UI Generation (UPGRADED)
+ * Vector Renderer - Mathematical UI Generation Engine
  * 
- * Now features:
- * - Realistic Diia ID Card design
- * - Holographic gradient effects  
- * - 3D tilt mathematics
- * - Deep zoom support (up to 5000%)
- * - Security patterns (vector grid)
+ * Production-grade SVG generator for Diia Design System
+ * Features: Design tokens, accessibility, performance optimization, type safety
+ * 
+ * @version 2.0.0
+ * @author 010io (Igor Omelchenko)
+ * @license MIT
  */
 
+/**
+ * Design tokens - Single source of truth for Diia Design System
+ * @const {Object}
+ */
+const DIIA_TOKENS = Object.freeze({
+  // Color palette
+  colors: {
+    primary: '#67C3F3',      // Diia Blue
+    background: '#E2ECF4',   // Light Blue Gray
+    dark: '#0a0e27',         // Near Black
+    cardBg: '#FFFFFF',       // Pure White
+    text: '#000000',         // Black
+    textSecondary: '#666666', // Gray
+    textTertiary: '#999999', // Light Gray
+    flag: {
+      blue: '#005BBB',       // Ukrainian Blue
+      yellow: '#FFD700'      // Ukrainian Yellow
+    }
+  },
+  
+  // Layout system (8px grid)
+  spacing: {
+    xs: 4,
+    sm: 8,
+    md: 16,
+    lg: 24,
+    xl: 32,
+    xxl: 48
+  },
+  
+  // Typography scale
+  fontSize: {
+    xs: 7,
+    sm: 8,
+    base: 10,
+    md: 14,
+    lg: 18,
+    xl: 32,
+    xxl: 40
+  },
+  
+  // Border radius
+  radius: {
+    sm: 8,
+    md: 16,
+    lg: 24
+  },
+  
+  // Dimensions
+  canvas: {
+    width: 360,
+    height: 680
+  },
+  
+  card: {
+    height: 220,
+    photoRadius: 45,
+    qrSize: 60,
+    flagWidth: 40,
+    flagHeight: 24
+  },
+  
+  // Mathematical constants
+  goldenRatio: 1.618,
+  
+  // Animation
+  animation: {
+    duration: 300,
+    easing: 'cubic-bezier(0.4, 0.0, 0.2, 1)'
+  }
+});
+
+/**
+ * @typedef {Object} DiiaCardProps
+ * @property {string} [title='ПОСВІДЧЕННЯ ВОДІЯ'] - Document title
+ * @property {string} [firstName='ТАРАС'] - First name
+ * @property {string} [lastName='ШЕВЧЕНКО'] - Last name
+ * @property {string} [birthDate='09.03.1814'] - Birth date
+ * @property {string} [cardNumber='AAA 123456'] - Card number
+ */
+
+/**
+ * Vector Renderer Class
+ * 
+ * Generates mathematical SVG-based UI components for Diia ecosystem
+ * All rendering is pure - no side effects, deterministic output
+ * 
+ * @class
+ * @example
+ * const renderer = new VectorRenderer();
+ * const svg = renderer.renderDiiaIDCard({ firstName: 'ОЛЕНА' }, 2);
+ */
 class VectorRenderer {
+  /**
+   * Creates a new VectorRenderer instance
+   * @constructor
+   */
   constructor() {
-    // Design tokens (base scale)
-    this.WIDTH = 360;
-    this.HEIGHT = 680;
-    this.PADDING = 16;
-    this.BORDER_RADIUS = 24;
-    this.GOLDEN_RATIO = 1.618;
+    // Design tokens (immutable reference)
+    this.tokens = DIIA_TOKENS;
     
-    // Diia colors
-    this.DIIA_BLUE = '#67C3F3';
-    this.DIIA_BG = '#E2ECF4';
-    this.DIIA_DARK = '#0a0e27';
-    this.DIIA_CARD_BG = '#FFFFFF';
-    
-    // Layout state
+    // Layout state (mutable for stacking calculations)
     this.currentY = 0;
     
-    // 3D tilt state
+    // 3D tilt state (bounded to [-1, 1])
     this.tiltX = 0;
     this.tiltY = 0;
+    
+    // Performance: Pattern cache for repeated renders
+    /** @type {Map<string, string>} */
+    this.patternCache = new Map();
+    
+    // Statistics
+    this.stats = {
+      rendersCount: 0,
+      cacheHits: 0,
+      cacheMisses: 0
+    };
+  }
+  
+  /**
+   * Get current configuration
+   * @returns {Object} Current renderer config
+   */
+  getConfig() {
+    return {
+      tokens: this.tokens,
+      tilt: { x: this.tiltX, y: this.tiltY },
+      stats: { ...this.stats }
+    };
   }
   
   /**
    * Reset layout engine
+   * @returns {void}
    */
   reset() {
     this.currentY = 0;
   }
   
   /**
-   * Advance Y position (stack layout)
+   * Advance Y position for vertical stacking
+   * @param {number} height - Height to advance
+   * @param {number} [gap=0] - Optional gap
+   * @returns {number} New Y position
    */
   advanceY(height, gap = 0) {
     this.currentY += height + gap;
@@ -48,18 +161,72 @@ class VectorRenderer {
   }
   
   /**
-   * Set 3D tilt (from mouse/gyroscope)
+   * Set 3D tilt for holographic effects
+   * Values are clamped to [-1, 1] range for safety
+   * 
+   * @param {number} x - Horizontal tilt
+   * @param {number} y - Vertical tilt
+   * @returns {void}
    */
   setTilt(x, y) {
-    this.tiltX = x;
-    this.tiltY = y;
+    this.tiltX = this._clamp(x, -1, 1);
+    this.tiltY = this._clamp(y, -1, 1);
   }
   
   /**
-   * Generate holographic gradient (living effect)
+   * Clamp value between min and max
+   * @private
+   * @param {number} value - Value to clamp
+   * @param {number} min - Minimum bound
+   * @param {number} max - Maximum bound
+   * @returns {number} Clamped value
+   */
+  _clamp(value, min, max) {
+    return Math.max(min, Math.min(max, value));
+  }
+  
+  /**
+   * Validate props object
+   * @private
+   * @param {*} props - Props to validate
+   * @throws {TypeError} If props is not an object
+   * @returns {void}
+   */
+  _validateProps(props) {
+    if (props !== null && typeof props !== 'object') {
+      throw new TypeError(`Props must be an object, got ${typeof props}`);
+    }
+  }
+  
+  /**
+   * Validate scale parameter
+   * @private
+   * @param {*} scale - Scale to validate
+   * @throws {TypeError} If scale is not a number
+   * @throws {RangeError} If scale is out of safe range
+   * @returns {void}
+   */
+  _validateScale(scale) {
+    if (typeof scale !== 'number') {
+      throw new TypeError(`Scale must be a number, got ${typeof scale}`);
+    }
+    if (scale <= 0 || scale > 100) {
+      throw new RangeError(`Scale must be between 0 and 100, got ${scale}`);
+    }
+    if (scale > 10) {
+      console.warn(`⚠️ Large scale (${scale}x) may impact performance`);
+    }
+  }
+  
+  /**
+   * Generate holographic gradient with tilt-based animation
+   * 
+   * @param {string} id - Unique gradient ID
+   * @param {number} [offsetX=0] - X offset multiplier
+   * @param {number} [offsetY=0] - Y offset multiplier
+   * @returns {string} SVG linearGradient definition
    */
   generateHologramGradient(id, offsetX = 0, offsetY = 0) {
-    // Gradient moves based on tilt/mouse position
     const x1 = 0 + offsetX * 100;
     const y1 = 0 + offsetY * 100;
     const x2 = 100 + offsetX * 100;
@@ -68,35 +235,67 @@ class VectorRenderer {
     return `
       <linearGradient id="${id}" x1="${x1}%" y1="${y1}%" x2="${x2}%" y2="${y2}%">
         <stop offset="0%" stop-color="#ffffff" stop-opacity="0.05" />
-        <stop offset="30%" stop-color="${this.DIIA_BLUE}" stop-opacity="0.15" />
+        <stop offset="30%" stop-color="${this.tokens.colors.primary}" stop-opacity="0.15" />
         <stop offset="70%" stop-color="#ffffff" stop-opacity="0.2" />
-        <stop offset="100%" stop-color="${this.DIIA_BLUE}" stop-opacity="0.05" />
+        <stop offset="100%" stop-color="${this.tokens.colors.primary}" stop-opacity="0.05" />
       </linearGradient>
     `;
   }
   
   /**
-   * Generate security pattern (vector grid)
+   * Generate security pattern (diagonal vector grid)
+   * Uses caching for performance optimization
+   * 
+   * @param {number} width - Pattern width
+   * @param {number} height - Pattern height
+   * @param {number} [scale=1] - Scale multiplier
+   * @returns {string} SVG path elements
    */
   generateSecurityPattern(width, height, scale = 1) {
+    const cacheKey = `pattern_${width}_${height}_${scale}`;
+    
+    // Check cache
+    if (this.patternCache.has(cacheKey)) {
+      this.stats.cacheHits++;
+      return this.patternCache.get(cacheKey);
+    }
+    
+    this.stats.cacheMisses++;
+    
     let pattern = '';
     const spacing = 20 * scale;
+    const strokeWidth = 0.5 * scale;
     
+    // Generate diagonal lines
     for (let i = 0; i < width; i += spacing) {
-      pattern += `<path d="M${i} 0 L${i - spacing} ${height}" stroke="white" stroke-width="${0.5 * scale}" stroke-opacity="0.1"/>`;
+      pattern += `<path d="M${i} 0 L${i - spacing} ${height}" stroke="white" stroke-width="${strokeWidth}" stroke-opacity="0.1"/>`;
     }
+    
+    // Cache result
+    this.patternCache.set(cacheKey, pattern);
     
     return pattern;
   }
   
   /**
    * Generate Vector QR Code (simplified mathematical pattern)
+   * 
+   * Note: This is a decorative pattern, not a real QR code
+   * For production, use a proper QR library
+   * 
+   * @param {number} x - X position
+   * @param {number} y - Y position
+   * @param {number} size - QR code size
+   * @param {number} [scale=1] - Scale multiplier
+   * @param {string} [color] - Fill color
+   * @returns {string} SVG path element
    */
-  generateVectorQR(x, y, size, scale = 1) {
+  generateVectorQR(x, y, size, scale = 1, color = this.tokens.colors.dark) {
     const actualSize = size * scale;
-    const pixelSize = actualSize / 21; // 21x21 QR grid
+    const gridSize = 21; // Standard QR grid
+    const pixelSize = actualSize / gridSize;
     
-    // Simplified QR pattern (mathematical, not real QR)
+    // Simplified QR pattern (decorative)
     const pattern = [
       1,1,1,1,1,1,1,0,0,1,0,1,0,1,1,1,1,1,1,1,1,
       1,0,0,0,0,0,1,0,1,0,1,0,1,0,1,0,0,0,0,0,1,
@@ -109,9 +308,15 @@ class VectorRenderer {
     ];
     
     let qrPath = '';
-    for (let i = 0; i < 21; i++) {
-      for (let j = 0; j < 21; j++) {
-        const index = (i *21 + j) % pattern.length;
+    
+    // Generate QR pixels within bounds
+    for (let i = 0; i < gridSize && i < 8; i++) {
+      for (let j = 0; j < gridSize; j++) {
+        const index = i * gridSize + j;
+        
+        // Boundary check
+        if (index >= pattern.length) break;
+        
         if (pattern[index] === 1) {
           const px = x + j * pixelSize;
           const py = y + i * pixelSize;
@@ -120,79 +325,94 @@ class VectorRenderer {
       }
     }
     
-    return `<path d="${qrPath}" fill="${this.DIIA_DARK}"/>`;
+    return `<path d="${qrPath}" fill="${color}" role="img" aria-label="QR код"/>`;
   }
   
   /**
    * Render realistic Diia ID Card
+   * 
+   * @param {DiiaCardProps} [props={}] - Card properties
+   * @param {number} [scale=1] - Scale multiplier (1 = 360x680)
+   * @returns {string} Complete SVG markup
+   * @throws {TypeError} If props is invalid
+   * @throws {RangeError} If scale is out of bounds
    */
   renderDiiaIDCard(props = {}, scale = 1) {
+    // Validation
+    this._validateProps(props);
+    this._validateScale(scale);
+    
     this.reset();
+    this.stats.rendersCount++;
     
-    const W = this.WIDTH * scale;
-    const H = this.HEIGHT * scale;
-    const P = this.PADDING * scale;
-    const R = this.BORDER_RADIUS * scale;
+    // Scaled dimensions
+    const W = this.tokens.canvas.width * scale;
+    const H = this.tokens.canvas.height * scale;
+    const P = this.tokens.spacing.md * scale;
+    const R = this.tokens.radius.lg * scale;
     
-    // Card dimensions (horizontal ID format)
+    // Card dimensions
     const cardW = W - (P * 2);
-    const cardH = 220 * scale;
+    const cardH = this.tokens.card.height * scale;
     const cardX = P;
-    const cardY = P + (32 * scale);
-    const cardR = 16 * scale;
+    const cardY = P + (this.tokens.spacing.xl * scale);
+    const cardR = this.tokens.radius.md * scale;
     
-    // SVG start
-    let svg = `<svg width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg">`;
+    // SVG with accessibility
+    let svg = `<svg width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Diia ID Card">`;
     
-    // Definitions (gradients, patterns)
+    // Definitions
     svg += `<defs>`;
     svg += this.generateHologramGradient('holo-gradient', this.tiltX * 0.5, this.tiltY * 0.5);
     svg += `<filter id="shadow"><feDropShadow dx="0" dy="4" stdDeviation="8" flood-opacity="0.15"/></filter>`;
+    svg += `<clipPath id="card-clip"><rect x="${cardX}" y="${cardY}" width="${cardW}" height="${cardH}" rx="${cardR}"/></clipPath>`;
     svg += `</defs>`;
     
     // Background
-    svg += `<rect width="${W}" height="${H}" rx="${R}" fill="${this.DIIA_BG}"/>`;
+    svg += `<rect width="${W}" height="${H}" rx="${R}" fill="${this.tokens.colors.background}"/>`;
     
-    // Main card background
-    svg += `<rect x="${cardX}" y="${cardY}" width="${cardW}" height="${cardH}" rx="${cardR}" fill="${this.DIIA_CARD_BG}" filter="url(#shadow)"/>`;
+    // Main card
+    svg += `<rect x="${cardX}" y="${cardY}" width="${cardW}" height="${cardH}" rx="${cardR}" fill="${this.tokens.colors.cardBg}" filter="url(#shadow)"/>`;
     
     // Security pattern overlay
     svg += `<g opacity="0.3" clip-path="url(#card-clip)">`;
-    svg += `<clipPath id="card-clip"><rect x="${cardX}" y="${cardY}" width="${cardW}" height="${cardH}" rx="${cardR}"/></clipPath>`;
     svg += this.generateSecurityPattern(cardW, cardH, scale);
     svg += `</g>`;
     
     // Hologram overlay
-    svg += `<rect x="${cardX}" y="${cardY}" width="${cardW}" height="${cardH}" rx="${cardR}" fill="url(#holo-gradient)"/>`;
+    svg += `<rect x="${cardX}" y="${cardY}" width="${cardW}" height="${cardH}" rx="${cardR}" fill="url(#holo-gradient)" aria-hidden="true"/>`;
     
-    // Country flag (blue/yellow)
+    // Ukrainian flag
     const flagX = cardX + (P * 2);
     const flagY = cardY + (P * 2);
-    const flagW = 40 * scale;
-    const flagH = 24 * scale;
+    const flagW = this.tokens.card.flagWidth * scale;
+    const flagH = this.tokens.card.flagHeight * scale;
+    const flagHalfH = Math.round(flagH / 2);
     
-    svg += `<rect x="${flagX}" y="${flagY}" width="${flagW}" height="${flagH/2}" fill="#005BBB"/>`;
-    svg += `<rect x="${flagX}" y="${flagY + flagH/2}" width="${flagW}" height="${flagH/2}" fill="#FFD700"/>`;
+    svg += `<g role="img" aria-label="Прапор України">`;
+    svg += `<rect x="${flagX}" y="${flagY}" width="${flagW}" height="${flagHalfH}" fill="${this.tokens.colors.flag.blue}"/>`;
+    svg += `<rect x="${flagX}" y="${flagY + flagHalfH}" width="${flagW}" height="${flagH - flagHalfH}" fill="${this.tokens.colors.flag.yellow}"/>`;
+    svg += `</g>`;
     
-    // Title "UKRAINE"
+    // Title "УКРАЇНА"
     const titleX = flagX + flagW + (12 * scale);
     const titleY = flagY + (18 * scale);
     
-    svg += `<text x="${titleX}" y="${titleY}" font-family="e-Ukraine, sans-serif" font-weight="bold" font-size="${14*scale}" fill="${this.DIIA_DARK}">УКРАЇНА</text>`;
+    svg += `<text x="${titleX}" y="${titleY}" font-family="e-Ukraine, Inter, sans-serif" font-weight="bold" font-size="${this.tokens.fontSize.md * scale}" fill="${this.tokens.colors.dark}">УКРАЇНА</text>`;
     
     // Document type
     const subtitleY = titleY + (16 * scale);
-    svg += `<text x="${titleX}" y="${subtitleY}" font-family="e-Ukraine, sans-serif" font-size="${10*scale}" fill="#666">${props.title || 'ПОСВІДЧЕННЯ ВОДІЯ'}</text>`;
+    svg += `<text x="${titleX}" y="${subtitleY}" font-family="e-Ukraine, Inter, sans-serif" font-size="${this.tokens.fontSize.base * scale}" fill="${this.tokens.colors.textSecondary}">${props.title || 'ПОСВІДЧЕННЯ ВОДІЯ'}</text>`;
     
-    // Photo placeholder (circle)
-    const photoR = 45 * scale;
+    // Photo placeholder
+    const photoR = this.tokens.card.photoRadius * scale;
     const photoX = cardX + (P * 2) + photoR;
     const photoY = cardY + (90 * scale);
     
-    svg += `<circle cx="${photoX}" cy="${photoY}" r="${photoR}" fill="#D0D0D0" stroke="${this.DIIA_BLUE}" stroke-width="${2*scale}"/>`;
-    svg += `<text x="${photoX}" y="${photoY + 5*scale}" font-size="${40*scale}" text-anchor="middle" opacity="0.3">👤</text>`;
+    svg += `<circle cx="${photoX}" cy="${photoY}" r="${photoR}" fill="#D0D0D0" stroke="${this.tokens.colors.primary}" stroke-width="${2 * scale}" role="img" aria-label="Фото"/>`;
+    svg += `<text x="${photoX}" y="${photoY + 5 * scale}" font-size="${this.tokens.fontSize.xxl * scale}" text-anchor="middle" opacity="0.3" aria-hidden="true">👤</text>`;
     
-    // Personal data (right side)
+    // Personal data
     const dataX = photoX + photoR + (20 * scale);
     let dataY = cardY + (70 * scale);
     
@@ -205,29 +425,29 @@ class VectorRenderer {
     ];
     
     fields.forEach((field) => {
-      svg += `<text x="${dataX}" y="${dataY}" font-family="e-Ukraine, sans-serif" font-size="${7*scale}" fill="#888">${field.label}</text>`;
+      svg += `<text x="${dataX}" y="${dataY}" font-family="e-Ukraine, Inter, sans-serif" font-size="${this.tokens.fontSize.xs * scale}" fill="${this.tokens.colors.textSecondary}">${field.label}</text>`;
       dataY += 12 * scale;
-      svg += `<text x="${dataX}" y="${dataY}" font-family="e-Ukraine, sans-serif" font-weight="600" font-size="${10*scale}" fill="${this.DIIA_DARK}">${field.value}</text>`;
+      svg += `<text x="${dataX}" y="${dataY}" font-family="e-Ukraine, Inter, sans-serif" font-weight="600" font-size="${this.tokens.fontSize.base * scale}" fill="${this.tokens.colors.dark}">${field.value}</text>`;
       dataY += 18 * scale;
     });
     
-    // Vector QR Code (bottom right)
-    const qrSize = 60 * scale;
+    // Vector QR Code
+    const qrSize = this.tokens.card.qrSize * scale;
     const qrX = cardX + cardW - qrSize - (P * 2);
     const qrY = cardY + cardH - qrSize - (P * 2);
     
     svg += `<rect x="${qrX}" y="${qrY}" width="${qrSize}" height="${qrSize}" fill="white"/>`;
-    svg += this.generateVectorQR(qrX, qrY, 60, scale);
+    svg += this.generateVectorQR(qrX, qrY, this.tokens.card.qrSize, scale);
     
-    // Diia logo (bottom left)
+    // Diia logo
     const logoX = cardX + (P * 2);
     const logoY = cardY + cardH - (40 * scale);
     
-    svg += `<text x="${logoX}" y="${logoY}" font-family="e-Ukraine, sans-serif" font-weight="bold" font-size="${18*scale}" fill="${this.DIIA_BLUE}">Дія</text>`;
+    svg += `<text x="${logoX}" y="${logoY}" font-family="e-Ukraine, Inter, sans-serif" font-weight="bold" font-size="${this.tokens.fontSize.lg * scale}" fill="${this.tokens.colors.primary}" role="img" aria-label="Дія логотип">Дія</text>`;
     
-    // Card number (bottom center)
+    // Card number
     const numberY = cardY + cardH - (12 * scale);
-    svg += `<text x="${cardX + cardW/2}" y="${numberY}" text-anchor="middle" font-family="monospace" font-size="${8*scale}" fill="#999">№ ${props.cardNumber || 'AAA 123456'}</text>`;
+    svg += `<text x="${cardX + cardW / 2}" y="${numberY}" text-anchor="middle" font-family="monospace" font-size="${this.tokens.fontSize.sm * scale}" fill="${this.tokens.colors.textTertiary}">№ ${props.cardNumber || 'AAA 123456'}</text>`;
     
     svg += `</svg>`;
     
@@ -235,7 +455,10 @@ class VectorRenderer {
   }
   
   /**
-   * Legacy render method (for backwards compatibility)
+   * Legacy render method (backwards compatibility)
+   * @param {DiiaCardProps} [props={}] - Card properties
+   * @param {number} [scale=1] - Scale multiplier
+   * @returns {string} SVG markup
    */
   render(props = {}, scale = 1) {
     return this.renderDiiaIDCard(props, scale);
@@ -243,10 +466,24 @@ class VectorRenderer {
   
   /**
    * Get payload size in bytes
+   * @param {DiiaCardProps} [props={}] - Card properties
+   * @param {number} [scale=1] - Scale multiplier
+   * @returns {number} Size in bytes
    */
-  getPayloadSize() {
-    const output = this.render();
+  getPayloadSize(props = {}, scale = 1) {
+    const output = this.renderDiiaIDCard(props, scale);
     return new Blob([output]).size;
+  }
+  
+  /**
+   * Clear pattern cache
+   * Use when memory optimization is needed
+   * @returns {void}
+   */
+  clearCache() {
+    this.patternCache.clear();
+    this.stats.cacheHits = 0;
+    this.stats.cacheMisses = 0;
   }
 }
 
