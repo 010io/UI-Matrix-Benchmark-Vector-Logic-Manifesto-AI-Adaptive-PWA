@@ -3,3 +3,8 @@
 *.pxt
 *.uxp
 *.uxt
+
+# Strict Exclusions
+.env
+node_modules/
+*.secret
