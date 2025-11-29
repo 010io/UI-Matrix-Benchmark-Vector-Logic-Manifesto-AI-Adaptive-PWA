@@ -11,7 +11,8 @@ const benchmarkEngine = new BenchmarkEngine();
 const exportEngine = new ExportEngine();
 
 // Initialize stress-test utilities
-const chaosMode = new ChaosMode();
+const chaosDOM = new ChaosMode();  // Separate instance for DOM
+const chaosVector = new ChaosMode();  // Separate instance for Vector
 const domFPSMeter = new FPSMeter();
 const vectorFPSMeter = new FPSMeter();
 const memoryMonitor = new MemoryMonitor();
@@ -314,30 +315,63 @@ function startChaosMode() {
   
   const arenaWidth = 800;
   const arenaHeight = 400;
+
+  // Particle Slider Logic
+  const particleSlider = document.getElementById('particle-count');
+  const particleValue = document.getElementById('particle-value');
+  const startBtn = document.getElementById('chaos-mode');
+
+  if (particleSlider) {
+    // Set initial value
+    const initialCount = parseInt(particleSlider.value);
+    chaosDOM.setParticleCount(initialCount);
+    chaosVector.setParticleCount(initialCount);
+
+    particleSlider.addEventListener('input', (e) => {
+      const count = parseInt(e.target.value);
+      if (particleValue) particleValue.textContent = count;
+      
+      chaosDOM.setParticleCount(count);
+      chaosVector.setParticleCount(count);
+      
+      if (!chaosRunning && startBtn) {
+         startBtn.innerHTML = `🌪️ Start Chaos (${(count/1000).toFixed(1)}K Particles)`;
+      }
+    });
+  }
   
-  // Start DOM chaos (will lag)
-  chaosMode.start('dom', chaosElements.domArena, arenaWidth, arenaHeight, () => {
+  // Start DOM chaos (will lag) - using chaosDOM instance
+  chaosDOM.start('dom', chaosElements.domArena, arenaWidth, arenaHeight, () => {
     domFPSMeter.update();
     updateChaosMetrics('dom', domFPSMeter);
   });
   
-  // Start Vector chaos (will stay smooth)
-  chaosMode.start('vector', chaosElements.vectorArena, arenaWidth, arenaHeight, () => {
+  // Start Vector chaos (will stay smooth) - using chaosVector instance
+  chaosVector.start('vector', chaosElements.vectorArena, arenaWidth, arenaHeight, () => {
     vectorFPSMeter.update();
     updateChaosMetrics('vector', vectorFPSMeter);
   });
   
   console.log('⚡ CHAOS MODE ACTIVE - Watch the FPS difference!');
+  console.log('  DOM: 10,000 individual <div> elements');
+  console.log('  Vector: Single <svg> with optimized rendering');
 }
 
 function stopChaosMode() {
   chaosRunning = false;
-  chaosMode.stop();
+  chaosDOM.stop();
+  chaosVector.stop();
   
   console.log('🛑 Chaos mode stopped');
   console.log('Final Stats:');
   console.log('  DOM FPS:', domFPSMeter.getFPS(), '(avg:', domFPSMeter.getAverageFPS() + ')');
   console.log('  Vector FPS:', vectorFPSMeter.getFPS(), '(avg:', vectorFPSMeter.getAverageFPS() + ')');
+  
+  // Show winner
+  const vectorAvg = vectorFPSMeter.getAverageFPS();
+  const domAvg = domFPSMeter.getAverageFPS();
+  const speedup = (vectorAvg / domAvg).toFixed(1);
+  console.log(`🏆 Vector is ${speedup}x faster!`);
 }
 
 function updateChaosMetrics(type, fpsMeter) {
