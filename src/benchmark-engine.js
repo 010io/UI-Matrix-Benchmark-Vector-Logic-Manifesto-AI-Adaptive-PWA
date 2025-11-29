@@ -34,41 +34,32 @@ class BenchmarkEngine {
     return `${(bytes / (1024 * 1024)).toFixed(2)} MB`;
   }
 
+  /**
+   * Measure render speed (JS + Layout + Paint)
+   * @param {Function} renderFn - Rendering function
+   * @param {Object} props - Props to pass to renderer
+   * @returns {Object} Performance metrics
+   */
   measureRenderSpeed(renderFn, props = {}) {
-    const sandbox = document.getElementById('benchmark-sandbox');
-    if (!sandbox) {
-      console.warn('⚠️ Benchmark sandbox not found! Results may be inaccurate.');
-    } else {
-      sandbox.innerHTML = ''; // Clear previous content
-    }
+    const sandbox = document.getElementById('benchmark-sandbox') || document.body;
+    sandbox.innerHTML = '';
 
-    const start = performance.now();
-
-    // 1. Generation
+    const jsStart = performance.now();
     const output = renderFn(props);
 
-    // 2. Injection & Layout (The Real Cost)
-    if (sandbox) {
-      if (typeof output === 'string') {
-        sandbox.innerHTML = output;
-      } else if (output instanceof Node) {
-        sandbox.appendChild(output);
-      }
-
-      // 3. Force Layout / Reflow
-      // Accessing offsetHeight forces the browser to calculate layout immediately
-      const _forceReflow = sandbox.offsetHeight;
+    if (typeof output === 'string') {
+      sandbox.innerHTML = output;
+    } else if (output instanceof Node) {
+      sandbox.appendChild(output);
     }
 
-    const end = performance.now();
+    const _reflow = sandbox.offsetHeight;
+    const jsEnd = performance.now();
 
-    // Cleanup
-    if (sandbox) {
-      sandbox.innerHTML = '';
-    }
+    sandbox.innerHTML = '';
 
     return {
-      time: end - start,
+      time: jsEnd - jsStart,
       output: output,
       size: this.calculatePayload(output)
     };
@@ -110,7 +101,6 @@ class BenchmarkEngine {
   runBenchmark(renderers, props = {}) {
     console.log('🚀 Starting benchmark...');
 
-    // Single render test
     console.log('📊 Single Render Test...');
     this.results.vector.single = this.measureRenderSpeed(
       (p) => renderers.vector.render(p),
@@ -125,7 +115,6 @@ class BenchmarkEngine {
       props
     );
 
-    // Stress test (100 iterations for speed)
     console.log('⚡ Stress Test (100 iterations)...');
     this.results.vector.stress = this.stressTest(
       (p) => renderers.vector.render(p),
@@ -143,7 +132,6 @@ class BenchmarkEngine {
       props
     );
 
-    // Calculate efficiency multipliers
     this.calculateEfficiency();
 
     console.log('✅ Benchmark complete!');
@@ -172,7 +160,6 @@ class BenchmarkEngine {
   updateDashboard(elements) {
     if (!this.results.vector.single) return;
 
-    // Vector metrics
     if (elements.vectorSize) {
       elements.vectorSize.textContent = this.formatBytes(this.results.vector.single.size);
     }
@@ -180,7 +167,6 @@ class BenchmarkEngine {
       elements.vectorTime.textContent = `${this.results.vector.single.time.toFixed(2)} ms`;
     }
 
-    // DOM metrics
     if (elements.domSize) {
       elements.domSize.textContent = this.formatBytes(this.results.dom.single.size);
     }
@@ -188,7 +174,6 @@ class BenchmarkEngine {
       elements.domTime.textContent = `${this.results.dom.single.time.toFixed(2)} ms`;
     }
 
-    // Figma metrics
     if (elements.figmaSize) {
       elements.figmaSize.textContent = this.formatBytes(this.results.figma.single.size);
     }
@@ -196,7 +181,6 @@ class BenchmarkEngine {
       elements.figmaTime.textContent = `${this.results.figma.single.time.toFixed(2)} ms`;
     }
 
-    // Efficiency multipliers
     if (elements.efficiencySize && this.results.efficiency) {
       elements.efficiencySize.textContent = `${this.results.efficiency.sizeVsDom}x smaller`;
     }
@@ -204,7 +188,6 @@ class BenchmarkEngine {
       elements.efficiencySpeed.textContent = `${this.results.efficiency.speedVsDom}x faster`;
     }
 
-    // Highlight winner (always Vector for this demo)
     this.highlightWinner(elements);
   }
 
@@ -213,7 +196,6 @@ class BenchmarkEngine {
    * @param {Object} elements - DOM elements
    */
   highlightWinner(elements) {
-    // Add winner class to vector metrics
     const winnerClass = 'metric-winner';
 
     if (elements.vectorSize?.parentElement) {

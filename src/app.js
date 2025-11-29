@@ -11,8 +11,8 @@ const benchmarkEngine = new BenchmarkEngine();
 const exportEngine = new ExportEngine();
 
 // Initialize stress-test utilities
-const chaosDOM = new ChaosMode();  // Separate instance for DOM
-const chaosVector = new ChaosMode();  // Separate instance for Vector
+const chaosDOM = new ChaosMode();
+const chaosVector = new ChaosMode();
 const domFPSMeter = new FPSMeter();
 const vectorFPSMeter = new FPSMeter();
 const memoryMonitor = new MemoryMonitor();
@@ -26,6 +26,9 @@ const testProps = {
 
 // Current scale
 let currentScale = 1.0;
+
+// Cache for AI results
+let cachedAIResults = null;
 
 // DOM elements
 const elements = {
@@ -70,7 +73,6 @@ elements.scaleSlider?.addEventListener('input', (e) => {
   currentScale = parseFloat(e.target.value);
   elements.scaleValue.textContent = `${currentScale.toFixed(1)}x`;
 
-  // Re-render previews with new scale
   if (benchmarkResults) {
     updatePreviews();
   }
@@ -82,21 +84,17 @@ let benchmarkResults = null;
 elements.runBenchmark?.addEventListener('click', async () => {
   console.log('🚀 Starting comprehensive benchmark...');
 
-  // Show loading state
   elements.runBenchmark.textContent = '⏳ Running...';
   elements.runBenchmark.disabled = true;
 
-  // Small delay for UI update
   await new Promise(resolve => setTimeout(resolve, 100));
 
-  // Run benchmark
   benchmarkResults = benchmarkEngine.runBenchmark({
     vector: vectorRenderer,
     dom: domRenderer,
     figma: figmaSimulator
   }, testProps);
 
-  // Run AI analysis
   const vectorOutput = vectorRenderer.render(testProps, currentScale);
   const domOutput = domRenderer.render(testProps, currentScale);
   const figmaOutput = figmaSimulator.render(testProps);
@@ -105,24 +103,24 @@ elements.runBenchmark?.addEventListener('click', async () => {
   const domAI = exportEngine.analyzeAIFriendliness(domOutput);
   const figmaAI = exportEngine.analyzeAIFriendliness(figmaOutput);
 
-  // Update UI
   updateMetrics(vectorAI, domAI, figmaAI);
   updatePreviews();
   updateTable();
 
-  // Calculate efficiency
-  const sizeRatio = (benchmarkResults.dom.single.size / benchmarkResults.vector.single.size).toFixed(1);
-  const tokenRatio = (domAI.estimatedTokens / vectorAI.estimatedTokens).toFixed(1);
+  cachedAIResults = { vectorAI, domAI, figmaAI };
+
+  const vectorSize = benchmarkResults.vector.single.size || 1;
+  const vectorTokens = vectorAI.estimatedTokens || 1;
+  const sizeRatio = (benchmarkResults.dom.single.size / vectorSize).toFixed(1);
+  const tokenRatio = (domAI.estimatedTokens / vectorTokens).toFixed(1);
   elements.efficiencyMultiplier.textContent = `${sizeRatio}x меншу вагу та ${tokenRatio}x менше токенів`;
 
-  // Console report
   benchmarkEngine.generateReport();
   console.log('\n🤖 AI-Friendliness Analysis:');
   console.log('Vector:', vectorAI);
   console.log('DOM:', domAI);
   console.log('Figma:', figmaAI);
 
-  // Reset button
   elements.runBenchmark.textContent = '✅ Benchmark Complete';
   setTimeout(() => {
     elements.runBenchmark.textContent = '🚀 Run Benchmark';
@@ -132,19 +130,21 @@ elements.runBenchmark?.addEventListener('click', async () => {
 
 // Update metrics
 function updateMetrics(vectorAI, domAI, figmaAI) {
-  // Vector
+  if (!benchmarkResults) {
+    console.error('Benchmark results not available');
+    return;
+  }
+
   elements.vectorSize.textContent = formatBytes(benchmarkResults.vector.single.size);
   elements.vectorTime.textContent = `${benchmarkResults.vector.single.time.toFixed(2)} ms`;
   elements.vectorAIScore.textContent = `${vectorAI.aiFriendlyScore}/100`;
   elements.vectorTokens.textContent = `${vectorAI.estimatedTokens}`;
 
-  // DOM
   elements.domSize.textContent = formatBytes(benchmarkResults.dom.single.size);
   elements.domTime.textContent = `${benchmarkResults.dom.single.time.toFixed(2)} ms`;
   elements.domAIScore.textContent = `${domAI.aiFriendlyScore}/100`;
   elements.domTokens.textContent = `${domAI.estimatedTokens}`;
 
-  // Figma
   elements.figmaSize.textContent = formatBytes(benchmarkResults.figma.single.size);
   elements.figmaTime.textContent = `${benchmarkResults.figma.single.time.toFixed(2)} ms`;
   elements.figmaAIScore.textContent = `${figmaAI.aiFriendlyScore}/100`;
@@ -153,15 +153,12 @@ function updateMetrics(vectorAI, domAI, figmaAI) {
 
 // Update previews
 function updatePreviews() {
-  // Vector preview (SVG)
-  const vectorOutput = vectorRenderer.render(testProps, currentScale * 0.5); // Scale down for preview
+  const vectorOutput = vectorRenderer.render(testProps, currentScale * 0.5);
   elements.vectorPreview.innerHTML = vectorOutput;
 
-  // DOM preview
   const domOutput = domRenderer.render(testProps, currentScale * 0.5);
   elements.domPreview.innerHTML = domOutput;
 
-  // Figma preview (show truncated JSON)
   const figmaOutput = figmaSimulator.render(testProps);
   const truncated = figmaOutput.substring(0, 200) + '\n  ...\n  (truncated)\n}';
   elements.figmaPreviewCode.textContent = truncated;
@@ -169,21 +166,13 @@ function updatePreviews() {
 
 // Update comparison table
 function updateTable() {
-  const vectorSize = benchmarkResults.vector.single.size;
-  const domSize = benchmarkResults.dom.single.size;
-  const figmaSize = benchmarkResults.figma.single.size;
+  if (!benchmarkResults || !cachedAIResults) return;
 
-  document.getElementById('table-vector-size').textContent = formatBytes(vectorSize);
-  document.getElementById('table-dom-size').textContent = formatBytes(domSize);
-  document.getElementById('table-figma-size').textContent = formatBytes(figmaSize);
+  const { vectorAI, domAI, figmaAI } = cachedAIResults;
 
-  const vectorOutput = vectorRenderer.render(testProps);
-  const domOutput = domRenderer.render(testProps);
-  const figmaOutput = figmaSimulator.render(testProps);
-
-  const vectorAI = exportEngine.analyzeAIFriendliness(vectorOutput);
-  const domAI = exportEngine.analyzeAIFriendliness(domOutput);
-  const figmaAI = exportEngine.analyzeAIFriendliness(figmaOutput);
+  document.getElementById('table-vector-size').textContent = formatBytes(benchmarkResults.vector.single.size);
+  document.getElementById('table-dom-size').textContent = formatBytes(benchmarkResults.dom.single.size);
+  document.getElementById('table-figma-size').textContent = formatBytes(benchmarkResults.figma.single.size);
 
   document.getElementById('table-vector-tokens').textContent = vectorAI.estimatedTokens;
   document.getElementById('table-dom-tokens').textContent = domAI.estimatedTokens;
@@ -269,7 +258,6 @@ function downloadExport(format) {
 
 // Chaos mode handlers
 let chaosRunning = false;
-let chaosArenaVisible = false;
 
 const chaosElements = {
   chaosButton: document.getElementById('chaos-mode'),
@@ -288,13 +276,11 @@ const chaosElements = {
 chaosElements.chaosButton?.addEventListener('click', () => {
   console.log('🌪️ Starting CHAOS MODE...');
 
-  // Show arena
   if (chaosElements.arena) {
     chaosElements.arena.style.display = 'block';
     chaosElements.arena.scrollIntoView({ behavior: 'smooth' });
   }
 
-  // Start after small delay
   setTimeout(() => {
     startChaosMode();
   }, 500);
@@ -309,27 +295,34 @@ function startChaosMode() {
 
   chaosRunning = true;
 
-  // UI Updates
   if (chaosElements.chaosButton) chaosElements.chaosButton.disabled = true;
   if (chaosElements.stopButton) chaosElements.stopButton.disabled = false;
 
-  // Particle Slider Logic
   const particleSlider = document.getElementById('particle-count');
   const particleValue = document.getElementById('particle-value');
   let count = 2000;
 
   if (particleSlider) {
     count = parseInt(particleSlider.value);
-    chaosDOM.init('dom-arena', 'dom', count);
-    chaosVector.init('vector-arena', 'vector', count);
 
-    chaosDOM.start();
-    chaosVector.start();
-
-    console.log('⚡ CHAOS MODE ACTIVE - Watch the FPS difference!');
-    console.log('  DOM: Individual <div> elements');
-    console.log('  Vector: Single <svg> with optimized rendering');
+    particleSlider.addEventListener('input', (e) => {
+      const newCount = parseInt(e.target.value);
+      if (particleValue) particleValue.textContent = newCount;
+      if (chaosElements.chaosButton) {
+        chaosElements.chaosButton.textContent = `🌪️ Start Chaos (${(newCount / 1000).toFixed(1)}K Particles)`;
+      }
+    });
   }
+
+  chaosDOM.init('dom-arena', 'dom', count);
+  chaosVector.init('vector-arena', 'vector', count);
+
+  chaosDOM.start();
+  chaosVector.start();
+
+  console.log('⚡ CHAOS MODE ACTIVE');
+  console.log('  DOM: Individual <div> elements (heavy rendering)');
+  console.log('  Vector: Single <svg> (optimized)');
 }
 
 function stopChaosMode() {
@@ -341,6 +334,8 @@ function stopChaosMode() {
   if (chaosElements.stopButton) chaosElements.stopButton.disabled = true;
 
   console.log('🛑 Chaos mode stopped');
+  console.log(`Vector FPS: ${chaosVector.fpsMeter?.getFPS() || 'N/A'}`);
+  console.log(`DOM FPS: ${chaosDOM.fpsMeter?.getFPS() || 'N/A'}`);
 }
 
 // Auto-run benchmark on load

@@ -17,6 +17,7 @@ class ChaosMode {
     this.container = null;
     this.fpsMeter = null;
     this.pathElement = null;
+    this.dBuffer = null;
   }
 
   // Initialize with real FPS meter
@@ -28,31 +29,25 @@ class ChaosMode {
     }
     this.rendererType = type;
     this.particles = [];
+    this.dBuffer = new Array(count);
 
-    // Get dimensions from container if possible
     this.width = this.container.clientWidth || 800;
     this.height = this.container.clientHeight || 400;
 
-    // Bind correct FPS meter
-    // Adapting to existing HTML IDs: 'dom-fps' and 'vector-fps'
     const fpsDisplayId = type === 'dom' ? 'dom-fps' : 'vector-fps';
-
-    // FPSMeter is global (window.FPSMeter)
     if (typeof FPSMeter !== 'undefined') {
       this.fpsMeter = new FPSMeter(fpsDisplayId);
     } else {
-      console.warn('FPSMeter not found');
       this.fpsMeter = { tick: () => { }, getFPS: () => 0 };
     }
 
-    // Create particles
     for (let i = 0; i < count; i++) {
       this.particles.push({
         x: Math.random() * this.width,
         y: Math.random() * this.height,
-        vx: (Math.random() - 0.5) * 5, // Velocity
+        vx: (Math.random() - 0.5) * 5,
         vy: (Math.random() - 0.5) * 5,
-        color: Math.random() > 0.5 ? '#67C3F3' : '#000000' // Diia Palette
+        color: Math.random() > 0.5 ? '#67C3F3' : '#000000'
       });
     }
 
@@ -92,45 +87,35 @@ class ChaosMode {
     if (this.animationId) return;
 
     const update = () => {
-      if (this.fpsMeter) this.fpsMeter.tick(); // Count REAL frame
+      if (this.fpsMeter) this.fpsMeter.tick();
 
-      // 1. Physics Calculation (Pure Math)
       const particleCount = this.particles.length;
-      let p;
       const w = this.width;
       const h = this.height;
 
       for (let i = 0; i < particleCount; i++) {
-        p = this.particles[i];
+        const p = this.particles[i];
         p.x += p.vx;
         p.y += p.vy;
-
-        // Bounce off walls
         if (p.x < 0 || p.x > w) p.vx *= -1;
         if (p.y < 0 || p.y > h) p.vy *= -1;
       }
 
-      // 2. Rendering (The Bottle Neck)
       if (this.rendererType === 'dom') {
-        // DOM RENDERING: Very slow
-        // Accessing style.transform triggers layer recalculation
         for (let i = 0; i < particleCount; i++) {
-          p = this.particles[i];
+          const p = this.particles[i];
           if (p.element) {
             p.element.style.transform = `translate3d(${p.x}px, ${p.y}px, 0)`;
           }
         }
+        this.container.offsetHeight;
       } else {
-        // VECTOR RENDERING: Fast
-        // Constructing one long string "M x y L x+0.1 y"
         if (this.pathElement) {
-          const dArray = new Array(particleCount);
           for (let i = 0; i < particleCount; i++) {
-            p = this.particles[i];
-            // Draw zero-length line with round cap (like a dot)
-            dArray[i] = `M ${Math.round(p.x)} ${Math.round(p.y)} l 0.1 0`;
+            const p = this.particles[i];
+            this.dBuffer[i] = `M${Math.round(p.x)} ${Math.round(p.y)}l.1 0`;
           }
-          this.pathElement.setAttribute('d', dArray.join(' '));
+          this.pathElement.setAttribute('d', this.dBuffer.join(' '));
         }
       }
 
@@ -148,9 +133,7 @@ class ChaosMode {
   }
 
   setParticleCount(count) {
-    // Re-init if running? For now just store it, but init() takes count.
-    // This method is kept for compatibility if needed, but init() is preferred.
-    this.particleCount = count;
+    this.dBuffer = new Array(count);
   }
 }
 
