@@ -2,258 +2,161 @@
  * Chaos Mode - Particle Storm Stress Test
  * The ultimate DOM vs Vector performance showdown
  * 
- * DOM Approach: 10,000 individual <div> elements
- * Vector Approach: Single <svg> with path string
+ * Real Engineering Implementation:
+ * - DOM: Individual <div> elements with translate3d (Hardware Accelerated but heavy on Layout/Composite)
+ * - Vector: Single <svg> with <path> d attribute (Pure Math, lightweight)
  */
 
 class ChaosMode {
   constructor() {
-    this.particleCount = 2000; // Reduced from 10000 for better default performance
     this.particles = [];
-    this.animationFrameId = null;
-    this.isRunning = false;
-    
-    // Particle properties
-    this.maxSpeed = 2;
-    this.particleSize = 3;
+    this.animationId = null;
+    this.width = 800;
+    this.height = 400;
+    this.rendererType = 'dom';
+    this.container = null;
+    this.fpsMeter = null;
+    this.pathElement = null;
   }
-  
-  /**
-   * Initialize particles with random properties
-   */
-  initParticles(width, height) {
+
+  // Initialize with real FPS meter
+  init(containerId, type, count = 1000) {
+    this.container = document.getElementById(containerId);
+    if (!this.container) {
+      console.error(`Container not found: ${containerId}`);
+      return;
+    }
+    this.rendererType = type;
     this.particles = [];
-    for (let i = 0; i < this.particleCount; i++) {
+
+    // Get dimensions from container if possible
+    this.width = this.container.clientWidth || 800;
+    this.height = this.container.clientHeight || 400;
+
+    // Bind correct FPS meter
+    // Adapting to existing HTML IDs: 'dom-fps' and 'vector-fps'
+    const fpsDisplayId = type === 'dom' ? 'dom-fps' : 'vector-fps';
+
+    // FPSMeter is global (window.FPSMeter)
+    if (typeof FPSMeter !== 'undefined') {
+      this.fpsMeter = new FPSMeter(fpsDisplayId);
+    } else {
+      console.warn('FPSMeter not found');
+      this.fpsMeter = { tick: () => { }, getFPS: () => 0 };
+    }
+
+    // Create particles
+    for (let i = 0; i < count; i++) {
       this.particles.push({
-        x: Math.random() * width,
-        y: Math.random() * height,
-        vx: (Math.random() - 0.5) * this.maxSpeed,
-        vy: (Math.random() - 0.5) * this.maxSpeed,
-        color: this.getRandomColor()
+        x: Math.random() * this.width,
+        y: Math.random() * this.height,
+        vx: (Math.random() - 0.5) * 5, // Velocity
+        vy: (Math.random() - 0.5) * 5,
+        color: Math.random() > 0.5 ? '#67C3F3' : '#000000' // Diia Palette
       });
     }
+
+    this.renderInitialState();
   }
-  
-  /**
-   * Get random Diia-themed color
-   */
-  getRandomColor() {
-    const colors = [
-      '#67C3F3', // Diia Blue
-      '#5ab3e3',
-      '#4aa3d3',
-      '#3a93c3',
-      '#2a83b3'
-    ];
-    return colors[Math.floor(Math.random() * colors.length)];
-  }
-  
-  /**
-   * Update particle positions
-   */
-  updateParticles(width, height) {
-    const r = this.particleSize; // Radius
-    
-    for (let particle of this.particles) {
-      // Update position
-      particle.x += particle.vx;
-      particle.y += particle.vy;
-      
-      // Bounce off walls (taking radius into account)
-      // Left wall
-      if (particle.x < r) {
-        particle.x = r;
-        particle.vx *= -1;
-      }
-      // Right wall
-      else if (particle.x > width - r) {
-        particle.x = width - r;
-        particle.vx *= -1;
-      }
-      
-      // Top wall
-      if (particle.y < r) {
-        particle.y = r;
-        particle.vy *= -1;
-      }
-      // Bottom wall
-      else if (particle.y > height - r) {
-        particle.y = height - r;
-        particle.vy *= -1;
-      }
-    }
-  }
-  
-  /**
-   * DOM Implementation - Individual divs (SLOW)
-   */
-  renderDOM(container, width, height) {
-    // Clear container
-    container.innerHTML = '';
-    container.style.position = 'relative';
-    container.style.width = width + 'px';
-    container.style.height = height + 'px';
-    container.style.overflow = 'hidden';
-    container.style.background = '#0a0e27';
-    
-    // Create divs for each particle
-    const fragment = document.createDocumentFragment();
-    for (let particle of this.particles) {
-      const div = document.createElement('div');
-      div.style.position = 'absolute';
-      div.style.left = particle.x + 'px';
-      div.style.top = particle.y + 'px';
-      div.style.width = this.particleSize + 'px';
-      div.style.height = this.particleSize + 'px';
-      div.style.borderRadius = '50%';
-      div.style.backgroundColor = particle.color;
-      div.style.pointerEvents = 'none';
-      // Optimization: use transform instead of left/top for smoother DOM (still slow due to count)
-      // div.style.transform = `translate(${particle.x}px, ${particle.y}px)`; 
-      // Sticking to left/top to demonstrate "bad" DOM performance
-      fragment.appendChild(div);
-    }
-    container.appendChild(fragment);
-  }
-  
-  /**
-   * Update DOM particles (move existing divs)
-   */
-  updateDOM(container, width, height) {
-    this.updateParticles(width, height);
-    const divs = container.children;
-    
-    for (let i = 0; i < this.particles.length; i++) {
-      if (divs[i]) {
-        divs[i].style.left = (this.particles[i].x - this.particleSize) + 'px';
-        divs[i].style.top = (this.particles[i].y - this.particleSize) + 'px';
-      }
-    }
-  }
-  
-  /**
-   * Vector Implementation - Single SVG with Path (FAST)
-   * Using a single <path> element is significantly faster than thousands of <circle> elements
-   */
-  renderVector(container, width, height) {
-    container.innerHTML = '';
-    container.style.width = width + 'px';
-    container.style.height = height + 'px';
-    
-    // Create single SVG
-    const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
-    svg.setAttribute('width', width);
-    svg.setAttribute('height', height);
-    svg.setAttribute('viewBox', `0 0 ${width} ${height}`);
-    svg.style.background = '#0a0e27';
-    
-    // Create a single path for all particles
-    // Note: We can only use one color for a single path. 
-    // For multi-color, we'd need one path per color group.
-    // To keep it simple and fast, we'll use Diia Blue for all in Vector mode,
-    // or create a few groups. Let's do groups for parity.
-    
-    const colors = ['#67C3F3', '#5ab3e3', '#4aa3d3', '#3a93c3', '#2a83b3'];
-    
-    colors.forEach(color => {
-        const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-        path.setAttribute('fill', color);
-        path.setAttribute('id', `particles-${color.replace('#', '')}`);
-        svg.appendChild(path);
-    });
-    
-    container.appendChild(svg);
-    this.updateVector(container, width, height);
-  }
-  
-  /**
-   * Update vector particles (modify SVG Path d attributes)
-   */
-  updateVector(container, width, height) {
-    this.updateParticles(width, height);
-    
-    const svg = container.querySelector('svg');
-    if (!svg) return;
-    
-    // Group particles by color to build paths
-    const paths = {};
-    const colors = ['#67C3F3', '#5ab3e3', '#4aa3d3', '#3a93c3', '#2a83b3'];
-    colors.forEach(c => paths[c] = '');
-    
-    // Build path data: M x,y h 3 v 3 h -3 z (rectangles are faster than circles in path)
-    // Or use M x,y l 0.1 0 for stroke-cap round dots (if stroke is used)
-    // Let's use small rects for speed: M x y h s v s h -s z
-    const s = this.particleSize;
-    
-    for (let particle of this.particles) {
-        // Simple rect shape
-        paths[particle.color] += `M${Math.round(particle.x)} ${Math.round(particle.y)}h${s}v${s}h-${s}z`;
-    }
-    
-    // Update DOM once per color
-    for (let color of colors) {
-        const pathEl = svg.querySelector(`#particles-${color.replace('#', '')}`);
-        if (pathEl) {
-            pathEl.setAttribute('d', paths[color]);
-        }
-    }
-  }
-  
-  /**
-   * Start animation loop
-   */
-  start(mode, container, width, height, fpsCallback) {
-    if (this.isRunning) return;
-    
-    this.isRunning = true;
-    this.initParticles(width, height);
-    
-    // Initial render
-    if (mode === 'dom') {
-      this.renderDOM(container, width, height);
+
+  renderInitialState() {
+    this.container.innerHTML = '';
+
+    if (this.rendererType === 'dom') {
+      // DOM: Create thousands of DIVs. This kills the browser.
+      const fragment = document.createDocumentFragment();
+      this.particles.forEach(p => {
+        const el = document.createElement('div');
+        el.style.position = 'absolute';
+        el.style.width = '4px';
+        el.style.height = '4px';
+        el.style.background = p.color;
+        el.style.borderRadius = '50%';
+        // Use translate3d for GPU acceleration
+        el.style.transform = `translate3d(${p.x}px, ${p.y}px, 0)`;
+        p.element = el;
+        fragment.appendChild(el);
+      });
+      this.container.appendChild(fragment);
+
     } else {
-      this.renderVector(container, width, height);
+      // VECTOR: Single SVG Path.
+      this.container.innerHTML = `<svg width="100%" height="100%" viewBox="0 0 ${this.width} ${this.height}" style="overflow: visible;">
+        <path id="chaos-path-${this.rendererType}" fill="none" stroke="#67C3F3" stroke-width="4" stroke-linecap="round" />
+      </svg>`;
+      this.pathElement = this.container.querySelector('path');
     }
-    
-    // Animation loop
-    const animate = () => {
-      if (!this.isRunning) return;
-      
-      if (mode === 'dom') {
-        this.updateDOM(container, width, height);
-      } else {
-        this.updateVector(container, width, height);
+  }
+
+  start() {
+    if (this.animationId) return;
+
+    const update = () => {
+      if (this.fpsMeter) this.fpsMeter.tick(); // Count REAL frame
+
+      // 1. Physics Calculation (Pure Math)
+      const particleCount = this.particles.length;
+      let p;
+      const w = this.width;
+      const h = this.height;
+
+      for (let i = 0; i < particleCount; i++) {
+        p = this.particles[i];
+        p.x += p.vx;
+        p.y += p.vy;
+
+        // Bounce off walls
+        if (p.x < 0 || p.x > w) p.vx *= -1;
+        if (p.y < 0 || p.y > h) p.vy *= -1;
       }
-      
-      // FPS callback
-      if (fpsCallback) fpsCallback();
-      
-      this.animationFrameId = requestAnimationFrame(animate);
+
+      // 2. Rendering (The Bottle Neck)
+      if (this.rendererType === 'dom') {
+        // DOM RENDERING: Very slow
+        // Accessing style.transform triggers layer recalculation
+        for (let i = 0; i < particleCount; i++) {
+          p = this.particles[i];
+          if (p.element) {
+            p.element.style.transform = `translate3d(${p.x}px, ${p.y}px, 0)`;
+          }
+        }
+      } else {
+        // VECTOR RENDERING: Fast
+        // Constructing one long string "M x y L x+0.1 y"
+        if (this.pathElement) {
+          const dArray = new Array(particleCount);
+          for (let i = 0; i < particleCount; i++) {
+            p = this.particles[i];
+            // Draw zero-length line with round cap (like a dot)
+            dArray[i] = `M ${Math.round(p.x)} ${Math.round(p.y)} l 0.1 0`;
+          }
+          this.pathElement.setAttribute('d', dArray.join(' '));
+        }
+      }
+
+      this.animationId = requestAnimationFrame(update);
     };
-    
-    animate();
+
+    this.animationId = requestAnimationFrame(update);
   }
-  
-  /**
-   * Stop animation
-   */
+
   stop() {
-    this.isRunning = false;
-    if (this.animationFrameId) {
-      cancelAnimationFrame(this.animationFrameId);
-      this.animationFrameId = null;
+    if (this.animationId) {
+      cancelAnimationFrame(this.animationId);
+      this.animationId = null;
     }
   }
-  
-  /**
-   * Set particle count
-   */
+
   setParticleCount(count) {
-    this.particleCount = Math.max(100, Math.min(20000, count));
+    // Re-init if running? For now just store it, but init() takes count.
+    // This method is kept for compatibility if needed, but init() is preferred.
+    this.particleCount = count;
   }
 }
 
 // Export for use in app
 if (typeof module !== 'undefined' && module.exports) {
   module.exports = ChaosMode;
+} else {
+  window.ChaosMode = ChaosMode;
 }

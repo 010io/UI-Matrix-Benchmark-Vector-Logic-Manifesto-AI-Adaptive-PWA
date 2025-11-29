@@ -289,11 +289,10 @@ chaosElements.chaosButton?.addEventListener('click', () => {
   console.log('🌪️ Starting CHAOS MODE...');
 
   // Show arena
-  chaosElements.arena.style.display = 'block';
-  chaosArenaVisible = true;
-
-  // Scroll to arena
-  chaosElements.arena.scrollIntoView({ behavior: 'smooth' });
+  if (chaosElements.arena) {
+    chaosElements.arena.style.display = 'block';
+    chaosElements.arena.scrollIntoView({ behavior: 'smooth' });
+  }
 
   // Start after small delay
   setTimeout(() => {
@@ -309,106 +308,43 @@ function startChaosMode() {
   if (chaosRunning) return;
 
   chaosRunning = true;
-  domFPSMeter.reset();
-  vectorFPSMeter.reset();
-  memoryMonitor.reset();
 
-  const arenaWidth = chaosElements.domArena.clientWidth || 800;
-  const arenaHeight = chaosElements.domArena.clientHeight || 400;
+  // UI Updates
+  if (chaosElements.chaosButton) chaosElements.chaosButton.disabled = true;
+  if (chaosElements.stopButton) chaosElements.stopButton.disabled = false;
 
   // Particle Slider Logic
   const particleSlider = document.getElementById('particle-count');
   const particleValue = document.getElementById('particle-value');
-  const startBtn = document.getElementById('chaos-mode');
+  let count = 2000;
 
   if (particleSlider) {
-    // Set initial value
-    const initialCount = parseInt(particleSlider.value);
-    chaosDOM.setParticleCount(initialCount);
-    chaosVector.setParticleCount(initialCount);
+    count = parseInt(particleSlider.value);
+    chaosDOM.init('dom-arena', 'dom', count);
+    chaosVector.init('vector-arena', 'vector', count);
 
-    particleSlider.addEventListener('input', (e) => {
-      const count = parseInt(e.target.value);
-      if (particleValue) particleValue.textContent = count;
+    chaosDOM.start();
+    chaosVector.start();
 
-      chaosDOM.setParticleCount(count);
-      chaosVector.setParticleCount(count);
-
-      if (!chaosRunning && startBtn) {
-        startBtn.innerHTML = `🌪️ Start Chaos (${(count / 1000).toFixed(1)}K Particles)`;
-      }
-    });
+    console.log('⚡ CHAOS MODE ACTIVE - Watch the FPS difference!');
+    console.log('  DOM: Individual <div> elements');
+    console.log('  Vector: Single <svg> with optimized rendering');
   }
 
-  // Start DOM chaos (will lag) - using chaosDOM instance
-  chaosDOM.start('dom', chaosElements.domArena, arenaWidth, arenaHeight, () => {
-    domFPSMeter.update();
-    updateChaosMetrics('dom', domFPSMeter);
+  function stopChaosMode() {
+    chaosRunning = false;
+    chaosDOM.stop();
+    chaosVector.stop();
+
+    if (chaosElements.chaosButton) chaosElements.chaosButton.disabled = false;
+    if (chaosElements.stopButton) chaosElements.stopButton.disabled = true;
+
+    console.log('🛑 Chaos mode stopped');
+  }
+
+  // Auto-run benchmark on load
+  window.addEventListener('load', () => {
+    console.log('🎯 Vector Logic Manifesto initialized');
+    console.log('💡 Click "Run Benchmark" to see the comparison');
+    console.log('🌪️ Click "Start Chaos" for the ultimate performance showdown');
   });
-
-  // Start Vector chaos (will stay smooth) - using chaosVector instance
-  chaosVector.start('vector', chaosElements.vectorArena, arenaWidth, arenaHeight, () => {
-    vectorFPSMeter.update();
-    updateChaosMetrics('vector', vectorFPSMeter);
-  });
-
-  console.log('⚡ CHAOS MODE ACTIVE - Watch the FPS difference!');
-  console.log('  DOM: 10,000 individual <div> elements');
-  console.log('  Vector: Single <svg> with optimized rendering');
-}
-
-function stopChaosMode() {
-  chaosRunning = false;
-  chaosDOM.stop();
-  chaosVector.stop();
-
-  console.log('🛑 Chaos mode stopped');
-  console.log('Final Stats:');
-  console.log('  DOM FPS:', domFPSMeter.getFPS(), '(avg:', domFPSMeter.getAverageFPS() + ')');
-  console.log('  Vector FPS:', vectorFPSMeter.getFPS(), '(avg:', vectorFPSMeter.getAverageFPS() + ')');
-
-  // Show winner
-  const vectorAvg = vectorFPSMeter.getAverageFPS();
-  const domAvg = domFPSMeter.getAverageFPS();
-  const speedup = (vectorAvg / domAvg).toFixed(1);
-  console.log(`🏆 Vector is ${speedup}x faster!`);
-}
-
-function updateChaosMetrics(type, fpsMeter) {
-  const fps = fpsMeter.getFPS();
-  const avgFPS = fpsMeter.getAverageFPS();
-  const grade = fpsMeter.getGrade();
-
-  if (type === 'dom') {
-    chaosElements.domFPS.textContent = `FPS: ${fps}`;
-    chaosElements.domFPS.style.backgroundColor = grade.color;
-    chaosElements.domGrade.textContent = `${grade.grade} (${grade.label})`;
-    chaosElements.domGrade.style.color = grade.color;
-  } else {
-    chaosElements.vectorFPS.textContent = `FPS: ${fps}`;
-    chaosElements.vectorFPS.style.backgroundColor = grade.color;
-    chaosElements.vectorGrade.textContent = `${grade.grade} (${grade.label})`;
-    chaosElements.vectorGrade.style.color = grade.color;
-  }
-
-  // Update memory (if available)
-  if (memoryMonitor.isAvailable()) {
-    memoryMonitor.sample();
-    const mem = memoryMonitor.getUsageMB();
-    if (type === 'dom') {
-      chaosElements.domMemory.textContent = `${mem.used} MB`;
-    } else {
-      chaosElements.vectorMemory.textContent = `${mem.used} MB`;
-    }
-  } else {
-    chaosElements.domMemory.textContent = 'N/A';
-    chaosElements.vectorMemory.textContent = 'N/A';
-  }
-}
-
-// Auto-run benchmark on load
-window.addEventListener('load', () => {
-  console.log('🎯 Vector Logic Manifesto initialized');
-  console.log('💡 Click "Run Benchmark" to see the comparison');
-  console.log('🌪️ Click "Start Chaos" for the ultimate performance showdown');
-});
