@@ -1573,28 +1573,73 @@ a:focus-visible {
   margin-bottom: var(--space-lg);
 }
 
-.arena-container {
+.arena-panel {
+  background: #000000;
+  border-radius: 12px;
+  overflow: hidden;
+  border: 1px solid #374151;
+  height: 500px;
   display: flex;
   flex-direction: column;
-  gap: var(--space-sm);
+  position: relative;
 }
 
-.arena {
-  width: 100%;
-  height: 400px;
-  background: #0a0e27;
-  border: 2px solid var(--diia-blue); /* Visible frame */
-  border-radius: var(--radius-md);
-  overflow: hidden !important; /* Force strict clipping */
+.arena-panel.winner {
+  border-color: var(--diia-success);
+  background: linear-gradient(135deg, 
+    var(--diia-bg) 0%, 
+    rgba(76, 175, 80, 0.1) 100%
+  );
+  box-shadow: 0 0 30px rgba(76, 175, 80, 0.3);
+}
+
+.arena-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem;
+  background: rgba(255, 255, 255, 0.05);
+  border-bottom: 1px solid #374151;
+}
+
+.arena-header h3 {
+  font-size: var(--font-md);
+  color: var(--diia-text);
+  margin: 0;
+  font-weight: 700;
+}
+
+.fps-badge {
+  padding: 4px 8px;
+  background: #374151;
+  border-radius: 4px;
+  font-family: monospace;
+  font-weight: bold;
+}
+
+.arena-canvas {
+  flex: 1;
   position: relative;
-  box-shadow: inset 0 0 20px rgba(0,0,0,0.5);
+  overflow: hidden;
+  width: 100%;
+  height: 100%;
+}
+
+.arena-stats {
+  padding: 0.5rem;
+  background: rgba(0, 0, 0, 0.8);
+  font-size: 0.8rem;
+  color: #9CA3AF;
+  display: flex;
+  justify-content: space-around;
+  border-top: 1px solid #374151;
 }
 
 @media (max-width: 768px) {
   .arena-grid {
     grid-template-columns: 1fr;
   }
-  .arena {
+  .arena-panel {
     height: 300px; /* Smaller on mobile */
   }
 }

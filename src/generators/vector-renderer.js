@@ -475,10 +475,11 @@ class VectorRenderer {
     const height = this.tokens.canvas.height * scale;
     const P = this.tokens.spacing.md * scale; // Padding 16px
 
-    let svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${width} ${height}" width="${width}" height="${height}" role="img" aria-label="${props.title || 'Завантаження документів'}">`;
+    const parts = [];
+    parts.push(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${width} ${height}" width="${width}" height="${height}" role="img" aria-label="${props.title || 'Завантаження документів'}">`);
 
     // Background
-    svg += `<rect width="${width}" height="${height}" fill="${this.tokens.colors.background}" rx="${this.tokens.radius.lg * scale}"/>`;
+    parts.push(`<rect width="${width}" height="${height}" fill="${this.tokens.colors.background}" rx="${this.tokens.radius.lg * scale}"/>`);
 
     // Card Container (White bg)
     const cardY = 16 * scale;
@@ -486,20 +487,18 @@ class VectorRenderer {
     const cardW = width - (16 * scale);
     const cardH = height - (32 * scale);
 
-    svg += `<rect x="${cardX}" y="${cardY}" width="${cardW}" height="${cardH}" rx="${24 * scale}" fill="${this.tokens.colors.cardBg}"/>`;
+    parts.push(`<rect x="${cardX}" y="${cardY}" width="${cardW}" height="${cardH}" rx="${24 * scale}" fill="${this.tokens.colors.cardBg}"/>`);
 
     // Content Area
     const contentX = cardX + P;
     let currentY = cardY + (32 * scale);
 
     // Title
-    svg += `<text x="${contentX}" y="${currentY}" font-family="e-Ukraine, Inter, sans-serif" font-weight="bold" font-size="${18 * scale}" fill="#111827">${props.title || 'Завантаження документів'}</text>`;
+    parts.push(`<text x="${contentX}" y="${currentY}" font-family="e-Ukraine, Inter, sans-serif" font-weight="bold" font-size="${18 * scale}" fill="#111827">${props.title || 'Завантаження документів'}</text>`);
 
     // Subtitle/Description
     currentY += 24 * scale;
-    // Simple text wrapping simulation (splitting into 2 lines if needed, or just rendering)
-    // For vector logic, we usually pre-calculate text layout, but here we'll just render it
-    svg += `<text x="${contentX}" y="${currentY}" font-family="e-Ukraine, Inter, sans-serif" font-size="${14 * scale}" fill="#374151">${props.subtitle || props.description || 'Додайте необхідні документи'}</text>`;
+    parts.push(`<text x="${contentX}" y="${currentY}" font-family="e-Ukraine, Inter, sans-serif" font-size="${14 * scale}" fill="#374151">${props.subtitle || props.description || 'Додайте необхідні документи'}</text>`);
 
     // Upload Zone
     currentY += 32 * scale;
@@ -507,7 +506,7 @@ class VectorRenderer {
     const zoneW = cardW - (P * 2);
 
     // Dashed border rect
-    svg += `<rect x="${contentX}" y="${currentY}" width="${zoneW}" height="${zoneH}" rx="${16 * scale}" fill="#F5F8FA" stroke="#D1D5DB" stroke-width="${2 * scale}" stroke-dasharray="${8 * scale} ${8 * scale}"/>`;
+    parts.push(`<rect x="${contentX}" y="${currentY}" width="${zoneW}" height="${zoneH}" rx="${16 * scale}" fill="#F5F8FA" stroke="#D1D5DB" stroke-width="${2 * scale}" stroke-dasharray="${8 * scale} ${8 * scale}"/>`);
 
     // Upload Icon & Text (Centered in zone)
     const centerX = contentX + (zoneW / 2);
@@ -517,20 +516,20 @@ class VectorRenderer {
     const arrowSize = 24 * scale;
     const arrowY = centerY - (12 * scale);
 
-    svg += `<path d="M${centerX} ${arrowY} L${centerX} ${arrowY + 12 * scale} M${centerX} ${arrowY} L${centerX - 4 * scale} ${arrowY + 4 * scale} M${centerX} ${arrowY} L${centerX + 4 * scale} ${arrowY + 4 * scale}" stroke="#67C3F3" stroke-width="${2 * scale}" stroke-linecap="round" stroke-linejoin="round"/>`;
+    parts.push(`<path d="M${centerX} ${arrowY} L${centerX} ${arrowY + 12 * scale} M${centerX} ${arrowY} L${centerX - 4 * scale} ${arrowY + 4 * scale} M${centerX} ${arrowY} L${centerX + 4 * scale} ${arrowY + 4 * scale}" stroke="#67C3F3" stroke-width="${2 * scale}" stroke-linecap="round" stroke-linejoin="round"/>`);
 
     // "Add File" Text
-    svg += `<text x="${centerX}" y="${centerY + 16 * scale}" text-anchor="middle" font-family="e-Ukraine, Inter, sans-serif" font-size="${16 * scale}" fill="#6B7280">${props.buttonText || 'Додати файл'}</text>`;
+    parts.push(`<text x="${centerX}" y="${centerY + 16 * scale}" text-anchor="middle" font-family="e-Ukraine, Inter, sans-serif" font-size="${16 * scale}" fill="#6B7280">${props.buttonText || 'Додати файл'}</text>`);
 
     // Bottom Button "Next"
     const btnH = 56 * scale;
     const btnY = cardY + cardH - btnH - P;
 
-    svg += `<rect x="${contentX}" y="${btnY}" width="${zoneW}" height="${btnH}" rx="${16 * scale}" fill="#000000"/>`;
-    svg += `<text x="${centerX}" y="${btnY + (btnH / 2) + (6 * scale)}" text-anchor="middle" font-family="e-Ukraine, Inter, sans-serif" font-weight="600" font-size="${18 * scale}" fill="#FFFFFF">Далі</text>`;
+    parts.push(`<rect x="${contentX}" y="${btnY}" width="${zoneW}" height="${btnH}" rx="${16 * scale}" fill="#000000"/>`);
+    parts.push(`<text x="${centerX}" y="${btnY + (btnH / 2) + (6 * scale)}" text-anchor="middle" font-family="e-Ukraine, Inter, sans-serif" font-weight="600" font-size="${18 * scale}" fill="#FFFFFF">Далі</text>`);
 
-    svg += `</svg>`;
-    return svg;
+    parts.push(`</svg>`);
+    return parts.join('');
   }
 
   /**
