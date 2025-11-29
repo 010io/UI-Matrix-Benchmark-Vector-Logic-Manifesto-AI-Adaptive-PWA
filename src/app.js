@@ -10,6 +10,13 @@ const figmaSimulator = new FigmaSimulator();
 const benchmarkEngine = new BenchmarkEngine();
 const exportEngine = new ExportEngine();
 
+// Initialize stress-test utilities
+const chaosMode = new ChaosMode();
+const domFPSMeter = new FPSMeter();
+const vectorFPSMeter = new FPSMeter();
+const memoryMonitor = new MemoryMonitor();
+const llmCalculator = new LLMCostCalculator();
+
 // Screen props for testing
 const testProps = {
   title: 'Завантаження документів',
@@ -259,8 +266,115 @@ function downloadExport(format) {
   URL.revokeObjectURL(url);
 }
 
+// Chaos mode handlers
+let chaosRunning = false;
+let chaosArenaVisible = false;
+
+const chaosElements = {
+  chaosButton: document.getElementById('chaos-mode'),
+  stopButton: document.getElementById('stop-chaos'),
+  arena: document.getElementById('chaos-arena'),
+  domArena: document.getElementById('dom-arena'),
+  vectorArena: document.getElementById('vector-arena'),
+  domFPS: document.getElementById('dom-fps'),
+  vectorFPS: document.getElementById('vector-fps'),
+  domMemory: document.getElementById('dom-memory'),
+  vectorMemory: document.getElementById('vector-memory'),
+  domGrade: document.getElementById('dom-grade'),
+  vectorGrade: document.getElementById('vector-grade')
+};
+
+chaosElements.chaosButton?.addEventListener('click', () => {
+  console.log('🌪️ Starting CHAOS MODE...');
+  
+  // Show arena
+  chaosElements.arena.style.display = 'block';
+  chaosArenaVisible = true;
+  
+  // Scroll to arena
+  chaosElements.arena.scrollIntoView({ behavior: 'smooth' });
+  
+  // Start after small delay
+  setTimeout(() => {
+    startChaosMode();
+  }, 500);
+});
+
+chaosElements.stopButton?.addEventListener('click', () => {
+  stopChaosMode();
+});
+
+function startChaosMode() {
+  if (chaosRunning) return;
+  
+  chaosRunning = true;
+  domFPSMeter.reset();
+  vectorFPSMeter.reset();
+  memoryMonitor.reset();
+  
+  const arenaWidth = 800;
+  const arenaHeight = 400;
+  
+  // Start DOM chaos (will lag)
+  chaosMode.start('dom', chaosElements.domArena, arenaWidth, arenaHeight, () => {
+    domFPSMeter.update();
+    updateChaosMetrics('dom', domFPSMeter);
+  });
+  
+  // Start Vector chaos (will stay smooth)
+  chaosMode.start('vector', chaosElements.vectorArena, arenaWidth, arenaHeight, () => {
+    vectorFPSMeter.update();
+    updateChaosMetrics('vector', vectorFPSMeter);
+  });
+  
+  console.log('⚡ CHAOS MODE ACTIVE - Watch the FPS difference!');
+}
+
+function stopChaosMode() {
+  chaosRunning = false;
+  chaosMode.stop();
+  
+  console.log('🛑 Chaos mode stopped');
+  console.log('Final Stats:');
+  console.log('  DOM FPS:', domFPSMeter.getFPS(), '(avg:', domFPSMeter.getAverageFPS() + ')');
+  console.log('  Vector FPS:', vectorFPSMeter.getFPS(), '(avg:', vectorFPSMeter.getAverageFPS() + ')');
+}
+
+function updateChaosMetrics(type, fpsMeter) {
+  const fps = fpsMeter.getFPS();
+  const avgFPS = fpsMeter.getAverageFPS();
+  const grade = fpsMeter.getGrade();
+  
+  if (type === 'dom') {
+    chaosElements.domFPS.textContent = `FPS: ${fps}`;
+    chaosElements.domFPS.style.backgroundColor = grade.color;
+    chaosElements.domGrade.textContent = `${grade.grade} (${grade.label})`;
+    chaosElements.domGrade.style.color = grade.color;
+  } else {
+    chaosElements.vectorFPS.textContent = `FPS: ${fps}`;
+    chaosElements.vectorFPS.style.backgroundColor = grade.color;
+    chaosElements.vectorGrade.textContent = `${grade.grade} (${grade.label})`;
+    chaosElements.vectorGrade.style.color = grade.color;
+  }
+  
+  // Update memory (if available)
+  if (memoryMonitor.isAvailable()) {
+    memoryMonitor.sample();
+    const mem = memoryMonitor.getUsageMB();
+    if (type === 'dom') {
+      chaosElements.domMemory.textContent = `${mem.used} MB`;
+    } else {
+      chaosElements.vectorMemory.textContent = `${mem.used} MB`;
+    }
+  } else {
+    chaosElements.domMemory.textContent = 'N/A';
+    chaosElements.vectorMemory.textContent = 'N/A';
+  }
+}
+
 // Auto-run benchmark on load
 window.addEventListener('load', () => {
   console.log('🎯 Vector Logic Manifesto initialized');
   console.log('💡 Click "Run Benchmark" to see the comparison');
+  console.log('🌪️ Click "Start Chaos" for the ultimate performance showdown');
 });

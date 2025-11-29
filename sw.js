@@ -2,14 +2,18 @@
  * Service Worker - PWA Offline Support
  */
 
-const CACHE_NAME = 'vector-logic-v1';
+const CACHE_NAME = 'vector-logic-v2';
 const urlsToCache = [
   '/',
   '/index.html',
   '/styles/main.css',
+  '/src/utils/fps-meter.js',
+  '/src/utils/memory-monitor.js',
+  '/src/utils/llm-cost-calculator.js',
   '/src/generators/vector-renderer.js',
   '/src/generators/dom-renderer.js',
   '/src/generators/figma-simulator.js',
+  '/src/generators/chaos-mode.js',
   '/src/benchmark-engine.js',
   '/src/export-engine.js',
   '/src/app.js',

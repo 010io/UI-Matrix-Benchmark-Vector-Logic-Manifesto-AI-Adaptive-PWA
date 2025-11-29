@@ -65,7 +65,49 @@
         <button id="export-test" class="btn-secondary">
           📦 Test Exports
         </button>
+        
+        <!-- Chaos Mode -->
+        <button id="chaos-mode" class="btn-secondary">
+          🌪️ Start Chaos (10K Particles)
+        </button>
       </div>
+    </section>
+
+    <!-- Chaos Arena (Split Screen) -->
+    <section class="chaos-arena" id="chaos-arena" style="display: none;">
+      <h2>⚡ CHAOS MODE: DOM vs Vector Performance</h2>
+      
+      <div class="arena-grid">
+        <!-- DOM Arena -->
+        <div class="arena-panel">
+          <div class="arena-header">
+            <h3>📄 DOM (Individual Divs)</h3>
+            <div class="fps-badge" id="dom-fps">FPS: —</div>
+          </div>
+          <div class="arena-canvas" id="dom-arena"></div>
+          <div class="arena-stats">
+            <span>RAM: <span id="dom-memory">—</span></span>
+            <span>Grade: <span id="dom-grade">—</span></span>
+          </div>
+        </div>
+        
+        <!-- Vector Arena -->
+        <div class="arena-panel winner">
+          <div class="arena-header">
+            <h3>🎯 Vector (Single SVG)</h3>
+            <div class="fps-badge" id="vector-fps">FPS: —</div>
+          </div>
+          <div class="arena-canvas" id="vector-arena"></div>
+          <div class="arena-stats">
+            <span>RAM: <span id="vector-memory">—</span></span>
+            <span>Grade: <span id="vector-grade">—</span></span>
+          </div>
+        </div>
+      </div>
+      
+      <button id="stop-chaos" class="btn-primary" style="margin-top: 1rem;">
+        🛑 Stop Chaos
+      </button>
     </section>
 
     <!-- Results Grid -->
@@ -289,9 +331,18 @@
   </footer>
 
   <!-- Scripts -->
+  <!-- Utilities -->
+  <script src="src/utils/fps-meter.js"></script>
+  <script src="src/utils/memory-monitor.js"></script>
+  <script src="src/utils/llm-cost-calculator.js"></script>
+  
+  <!-- Generators -->
   <script src="src/generators/vector-renderer.js"></script>
   <script src="src/generators/dom-renderer.js"></script>
   <script src="src/generators/figma-simulator.js"></script>
+  <script src="src/generators/chaos-mode.js"></script>
+  
+  <!-- Core -->
   <script src="src/benchmark-engine.js"></script>
   <script src="src/export-engine.js"></script>
   <script src="src/app.js"></script>
