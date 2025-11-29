@@ -275,26 +275,15 @@ async function startSequentialChaos() {
   chaosRunning = true;
 
   try {
-    const particleSlider = document.getElementById('particle-count');
-    const count = particleSlider ? parseInt(particleSlider.value) : 2000;
-
     chaosElements.chaosButton.disabled = true;
     chaosElements.stopButton.disabled = false;
-
     window.soundEffects?.playStart();
 
     const diiaRenderer = new DiiaScreenRenderer();
     const results = {};
 
-    // Test 1: DOM Rendering
     chaosElements.chaosButton.textContent = '📄 Testing DOM...';
-    chaosElements.arena.innerHTML = `
-      <div style="padding: 20px; background: #0a0e27; border-radius: 12px; margin-bottom: 20px;">
-        <h3 style="color: #67C3F3; margin-bottom: 10px;">📄 DOM Rendering</h3>
-        <div id="dom-screen-preview" style="background: #1a1f3a; border-radius: 8px; padding: 10px; overflow-y: auto; max-height: 400px;"></div>
-        <div style="margin-top: 10px; font-size: 12px; color: #a1a1aa;" id="dom-screen-metrics"></div>
-      </div>
-    `;
+    chaosElements.arena.innerHTML = '<div style="padding:20px;background:#0a0e27;border-radius:12px;margin-bottom:20px"><h3 style="color:#67C3F3;margin-bottom:10px">📄 DOM Rendering</h3><div id="dom-screen-preview" style="background:#1a1f3a;border-radius:8px;padding:10px;overflow-y:auto;max-height:500px"></div><div style="margin-top:10px;font-size:12px;color:#a1a1aa" id="dom-screen-metrics"></div></div>';
     
     const domStart = performance.now();
     const domHtml = diiaRenderer.renderDOM(1);
@@ -306,15 +295,8 @@ async function startSequentialChaos() {
 
     await new Promise(resolve => setTimeout(resolve, 2000));
 
-    // Test 2: Vector Rendering
     chaosElements.chaosButton.textContent = '🎯 Testing Vector...';
-    chaosElements.arena.innerHTML += `
-      <div style="padding: 20px; background: #0a0e27; border-radius: 12px; margin-bottom: 20px;">
-        <h3 style="color: #67C3F3; margin-bottom: 10px;">🎯 Vector Rendering</h3>
-        <div id="vector-screen-preview" style="background: #1a1f3a; border-radius: 8px; padding: 10px; overflow-y: auto; max-height: 400px;"></div>
-        <div style="margin-top: 10px; font-size: 12px; color: #a1a1aa;" id="vector-screen-metrics"></div>
-      </div>
-    `;
+    chaosElements.arena.innerHTML += '<div style="padding:20px;background:#0a0e27;border-radius:12px;margin-bottom:20px"><h3 style="color:#67C3F3;margin-bottom:10px">🎯 Vector Rendering</h3><div id="vector-screen-preview" style="background:#1a1f3a;border-radius:8px;padding:10px;overflow-y:auto;max-height:500px"></div><div style="margin-top:10px;font-size:12px;color:#a1a1aa" id="vector-screen-metrics"></div></div>';
     
     const vectorStart = performance.now();
     const vectorSvg = diiaRenderer.renderVector(1);
@@ -326,19 +308,12 @@ async function startSequentialChaos() {
 
     await new Promise(resolve => setTimeout(resolve, 2000));
 
-    // Test 3: Figma Simulation
     chaosElements.chaosButton.textContent = '🎨 Testing Figma...';
-    chaosElements.arena.innerHTML += `
-      <div style="padding: 20px; background: #0a0e27; border-radius: 12px;">
-        <h3 style="color: #67C3F3; margin-bottom: 10px;">🎨 Figma Export</h3>
-        <div id="figma-screen-preview" style="background: #1a1f3a; border-radius: 8px; padding: 10px; overflow-y: auto; max-height: 400px; font-family: monospace; font-size: 11px; color: #67C3F3;"></div>
-        <div style="margin-top: 10px; font-size: 12px; color: #a1a1aa;" id="figma-screen-metrics"></div>
-      </div>
-    `;
+    chaosElements.arena.innerHTML += '<div style="padding:20px;background:#0a0e27;border-radius:12px"><h3 style="color:#67C3F3;margin-bottom:10px">🎨 Figma Export</h3><div id="figma-screen-preview" style="background:#1a1f3a;border-radius:8px;padding:10px;overflow-y:auto;max-height:500px;font-family:monospace;font-size:11px;color:#67C3F3;white-space:pre-wrap;word-break:break-all"></div><div style="margin-top:10px;font-size:12px;color:#a1a1aa" id="figma-screen-metrics"></div></div>';
     
     const figmaStart = performance.now();
     const figmaJson = diiaRenderer.renderFigma(1);
-    document.getElementById('figma-screen-preview').textContent = figmaJson.substring(0, 500) + '...';
+    document.getElementById('figma-screen-preview').textContent = figmaJson.substring(0, 800) + '...';
     const figmaTime = performance.now() - figmaStart;
     const figmaSize = new Blob([figmaJson]).size;
     document.getElementById('figma-screen-metrics').textContent = `⏱️ ${figmaTime.toFixed(2)}ms | 📦 ${(figmaSize / 1024).toFixed(2)}KB`;
@@ -350,7 +325,7 @@ async function startSequentialChaos() {
     const speedup = (results.dom.time / results.vector.time).toFixed(1);
     const sizeReduction = ((results.dom.size - results.vector.size) / results.dom.size * 100).toFixed(0);
     
-    alert(`📊 DIIA SCREEN RENDERING TEST\n\n📄 DOM: ${results.dom.time.toFixed(2)}ms (${(results.dom.size / 1024).toFixed(2)}KB)\n🎯 Vector: ${results.vector.time.toFixed(2)}ms (${(results.vector.size / 1024).toFixed(2)}KB)\n🎨 Figma: ${results.figma.time.toFixed(2)}ms (${(results.figma.size / 1024).toFixed(2)}KB)\n\n⚡ Vector is ${speedup}x faster and ${sizeReduction}% smaller!`);
+    alert(`📊 DIIA SCREEN RENDERING\n\n📄 DOM: ${results.dom.time.toFixed(2)}ms (${(results.dom.size / 1024).toFixed(2)}KB)\n🎯 Vector: ${results.vector.time.toFixed(2)}ms (${(results.vector.size / 1024).toFixed(2)}KB)\n🎨 Figma: ${results.figma.time.toFixed(2)}ms (${(results.figma.size / 1024).toFixed(2)}KB)\n\n⚡ Vector ${speedup}x faster, ${sizeReduction}% smaller!`);
 
     chaosElements.chaosButton.textContent = '🌪️ Chaos Mode (Diia Screens)';
     chaosElements.chaosButton.disabled = false;
@@ -376,7 +351,6 @@ function stopChaosMode() {
   console.log('🛑 Chaos mode stopped');
 }
 
-// Responsive Test
 const responsiveTestBtn = document.getElementById('responsive-test');
 if (responsiveTestBtn) {
   responsiveTestBtn.addEventListener('click', async () => {
@@ -399,7 +373,6 @@ if (responsiveTestBtn) {
   });
 }
 
-// Export Results
 const exportResultsBtn = document.getElementById('export-results');
 if (exportResultsBtn) {
   exportResultsBtn.addEventListener('click', () => {
@@ -436,7 +409,6 @@ if (exportResultsBtn) {
   });
 }
 
-// Migration Guide & Screenshot Gallery
 const guideBtn = document.createElement('button');
 guideBtn.id = 'show-guide';
 guideBtn.className = 'btn-secondary';
