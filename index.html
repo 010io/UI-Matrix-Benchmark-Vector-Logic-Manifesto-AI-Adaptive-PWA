@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Proof of concept: Vector Logic vs DOM rendering performance">
+  <meta name="theme-color" content="#000000">
+  <title>Vector Logic Manifesto | Math vs Markup</title>
+  
+  <!-- PWA -->
+  <link rel="manifest" href="manifest.json">
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='75' font-size='75'>📐</text></svg>">
+  
+  <link rel="stylesheet" href="styles/main.css">
+</head>
+<body>
+  <!-- Header -->
+  <header class="header">
+    <div class="header-content">
+      <h1 class="header-title">
+        <span class="mono">Vector Logic Manifesto</span>
+        <span class="subtitle">Math vs Markup</span>
+      </h1>
+      <div class="header-meta">
+        <span class="badge">Diia.AI Contest 2025</span>
+        <span class="badge">010io</span>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Dashboard -->
+  <main class="dashboard">
+    <!-- Control Panel -->
+    <section class="control-panel">
+      <h2>⚙️ Benchmark Controls</h2>
+      
+      <div class="controls-grid">
+        <!-- Scale Slider -->
+        <div class="control-group">
+          <label for="scale-slider">
+            Масштаб: <span id="scale-value">1.0x</span>
+          </label>
+          <input 
+            type="range" 
+            id="scale-slider" 
+            min="0.5" 
+            max="3" 
+            step="0.1" 
+            value="1"
+            class="slider"
+          >
+        </div>
+        
+        <!-- Benchmark Button -->
+        <button id="run-benchmark" class="btn-primary">
+          🚀 Run Benchmark
+        </button>
+        
+        <!-- Stress Test -->
+        <button id="stress-test" class="btn-secondary">
+          ⚡ Stress Test (100x)
+        </button>
+        
+        <!-- Export Test -->
+        <button id="export-test" class="btn-secondary">
+          📦 Test Exports
+        </button>
+      </div>
+    </section>
+
+    <!-- Results Grid -->
+    <section class="results-grid">
+      <!-- Vector Card -->
+      <article class="result-card winner">
+        <div class="card-header">
+          <h3>🎯 Vector Logic</h3>
+          <span class="badge badge-success">Winner</span>
+        </div>
+        
+        <div class="metrics">
+          <div class="metric">
+            <span class="metric-label">Payload Size</span>
+            <span class="metric-value" id="vector-size">—</span>
+          </div>
+          <div class="metric">
+            <span class="metric-label">Render Time</span>
+            <span class="metric-value" id="vector-time">—</span>
+          </div>
+          <div class="metric">
+            <span class="metric-label">AI Score</span>
+            <span class="metric-value" id="vector-ai-score">—</span>
+          </div>
+          <div class="metric">
+            <span class="metric-label">Tokens (LLM)</span>
+            <span class="metric-value" id="vector-tokens">—</span>
+          </div>
+        </div>
+        
+        <div class="preview" id="vector-preview">
+          <!-- SVG will be injected here -->
+        </div>
+        
+        <div class="advantages">
+          <h4>✨ Переваги:</h4>
+          <ul>
+            <li>Математична основа (формули)</li>
+            <li>Безкінечна масштабованість</li>
+            <li>Мінімальний розмір</li>
+            <li>AI-friendly генерація</li>
+            <li>Експорт в будь-який формат</li>
+          </ul>
+        </div>
+      </article>
+
+      <!-- DOM Card -->
+      <article class="result-card">
+        <div class="card-header">
+          <h3>📄 DOM/HTML</h3>
+          <span class="badge">Traditional</span>
+        </div>
+        
+        <div class="metrics">
+          <div class="metric">
+            <span class="metric-label">Payload Size</span>
+            <span class="metric-value" id="dom-size">—</span>
+          </div>
+          <div class="metric">
+            <span class="metric-label">Render Time</span>
+            <span class="metric-value" id="dom-time">—</span>
+          </div>
+          <div class="metric">
+            <span class="metric-label">AI Score</span>
+            <span class="metric-value" id="dom-ai-score">—</span>
+          </div>
+          <div class="metric">
+            <span class="metric-label">Tokens (LLM)</span>
+            <span class="metric-value" id="dom-tokens">—</span>
+          </div>
+        </div>
+        
+        <div class="preview" id="dom-preview">
+          <!-- HTML will be injected here -->
+        </div>
+        
+        <div class="disadvantages">
+          <h4>⚠️ Недоліки:</h4>
+          <ul>
+            <li>Громіздкий markup</li>
+            <li>Складна структура для AI</li>
+            <li>Багато елементів DOM</li>
+            <li>Обмежена масштабованість</li>
+          </ul>
+        </div>
+      </article>
+
+      <!-- Figma Card -->
+      <article class="result-card">
+        <div class="card-header">
+          <h3>🎨 Figma Export</h3>
+          <span class="badge">Design Tool</span>
+        </div>
+        
+        <div class="metrics">
+          <div class="metric">
+            <span class="metric-label">Payload Size</span>
+            <span class="metric-value" id="figma-size">—</span>
+          </div>
+          <div class="metric">
+            <span class="metric-label">Render Time</span>
+            <span class="metric-value" id="figma-time">—</span>
+          </div>
+          <div class="metric">
+            <span class="metric-label">AI Score</span>
+            <span class="metric-value" id="figma-ai-score">—</span>
+          </div>
+          <div class="metric">
+            <span class="metric-label">Tokens (LLM)</span>
+            <span class="metric-value" id="figma-tokens">—</span>
+          </div>
+        </div>
+        
+        <div class="preview figma-preview">
+          <code id="figma-preview-code">// JSON Export...</code>
+        </div>
+        
+        <div class="disadvantages">
+          <h4>⚠️ Недоліки:</h4>
+          <ul>
+            <li>Величезний розмір JSON</li>
+            <li>Статичні дані</li>
+            <li>Неефективно для AI</li>
+            <li>Потребує конвертації</li>
+          </ul>
+        </div>
+      </article>
+    </section>
+
+    <!-- Export Formats Section -->
+    <section class="export-section" id="export-section" style="display: none;">
+      <h2>📦 Export Capabilities</h2>
+      
+      <div class="export-grid">
+        <div class="export-card">
+          <h4>React Native</h4>
+          <div class="metric">
+            <span class="metric-label">Size</span>
+            <span class="metric-value" id="export-rn-size">—</span>
+          </div>
+          <button class="btn-small" onclick="downloadExport('reactnative')">Download .tsx</button>
+        </div>
+        
+        <div class="export-card">
+          <h4>SwiftUI</h4>
+          <div class="metric">
+            <span class="metric-label">Size</span>
+            <span class="metric-value" id="export-swift-size">—</span>
+          </div>
+          <button class="btn-small" onclick="downloadExport('swiftui')">Download .swift</button>
+        </div>
+        
+        <div class="export-card">
+          <h4>PDF Instructions</h4>
+          <div class="metric">
+            <span class="metric-label">Size</span>
+            <span class="metric-value" id="export-pdf-size">—</span>
+          </div>
+          <button class="btn-small" onclick="downloadExport('pdf')">Download .ps</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- Efficiency Summary -->
+    <section class="efficiency-summary">
+      <h2>📊 Efficiency Analysis</h2>
+      
+      <div class="comparison-table">
+        <table>
+          <thead>
+            <tr>
+              <th>Metric</th>
+              <th>Vector</th>
+              <th>DOM</th>
+              <th>Figma</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>File Size</td>
+              <td class="winner-cell" id="table-vector-size">—</td>
+              <td id="table-dom-size">—</td>
+              <td id="table-figma-size">—</td>
+            </tr>
+            <tr>
+              <td>AI Tokens</td>
+              <td class="winner-cell" id="table-vector-tokens">—</td>
+              <td id="table-dom-tokens">—</td>
+              <td id="table-figma-tokens">—</td>
+            </tr>
+            <tr>
+              <td>Scalability</td>
+              <td class="winner-cell">♾️ Infinite</td>
+              <td>⚠️ Limited</td>
+              <td>❌ Fixed</td>
+            </tr>
+            <tr>
+              <td>Export Formats</td>
+              <td class="winner-cell">✅ All</td>
+              <td>⚠️ Web only</td>
+              <td>❌ Static</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      
+      <div class="conclusion">
+        <p class="conclusion-text">
+          <strong>Висновок:</strong> Векторний підхід на основі математичних формул забезпечує 
+          <span class="highlight" id="efficiency-multiplier">—</span> кращу ефективність, 
+          мінімальний розмір та максимальну гнучкість для AI-генерації та кросплатформенного експорту.
+        </p>
+      </div>
+    </section>
+  </main>
+
+  <!-- Footer -->
+  <footer class="footer">
+    <p>Built with 💙 for Diia.AI Contest 2025 | <a href="https://github.com/010io" target="_blank">@010io</a></p>
+    <p class="mono">Code is Math. Design is Formula.</p>
+  </footer>
+
+  <!-- Scripts -->
+  <script src="src/generators/vector-renderer.js"></script>
+  <script src="src/generators/dom-renderer.js"></script>
+  <script src="src/generators/figma-simulator.js"></script>
+  <script src="src/benchmark-engine.js"></script>
+  <script src="src/export-engine.js"></script>
+  <script src="src/app.js"></script>
+  
+  <!-- Service Worker Registration -->
+  <script>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('sw.js')
+          .then(reg => console.log('✅ Service Worker registered'))
+          .catch(err => console.log('❌ SW registration failed:', err));
+      });
+    }
+  </script>
+</body>
+</html>
