@@ -80,25 +80,25 @@ elements.runBenchmark?.addEventListener('click', async () => {
       figma: figmaSimulator
     }, testProps);
 
-  const vectorOutput = vectorRenderer.render(testProps, currentScale);
-  const domOutput = domRenderer.render(testProps, currentScale);
-  const figmaOutput = figmaSimulator.render(testProps);
+    const vectorOutput = vectorRenderer.render(testProps, currentScale);
+    const domOutput = domRenderer.render(testProps, currentScale);
+    const figmaOutput = figmaSimulator.render(testProps);
 
-  const vectorAI = exportEngine.analyzeAIFriendliness(vectorOutput);
-  const domAI = exportEngine.analyzeAIFriendliness(domOutput);
-  const figmaAI = exportEngine.analyzeAIFriendliness(figmaOutput);
+    const vectorAI = exportEngine.analyzeAIFriendliness(vectorOutput);
+    const domAI = exportEngine.analyzeAIFriendliness(domOutput);
+    const figmaAI = exportEngine.analyzeAIFriendliness(figmaOutput);
 
-  updateMetrics(vectorAI, domAI, figmaAI);
-  updateTable();
-  updateStatistics(vectorAI, domAI, figmaAI);
+    updateMetrics(vectorAI, domAI, figmaAI);
+    updateTable();
+    updateStatistics(vectorAI, domAI, figmaAI);
 
-  cachedAIResults = { vectorAI, domAI, figmaAI };
+    cachedAIResults = { vectorAI, domAI, figmaAI };
 
-  const vectorSize = benchmarkResults.vector.single.size || 1;
-  const vectorTokens = vectorAI.estimatedTokens || 1;
-  const sizeRatio = (benchmarkResults.dom.single.size / vectorSize).toFixed(1);
-  const tokenRatio = (domAI.estimatedTokens / vectorTokens).toFixed(1);
-  elements.efficiencyMultiplier.textContent = `${sizeRatio}x меншу вагу та ${tokenRatio}x менше токенів`;
+    const vectorSize = benchmarkResults.vector.single.size || 1;
+    const vectorTokens = vectorAI.estimatedTokens || 1;
+    const sizeRatio = (benchmarkResults.dom.single.size / vectorSize).toFixed(1);
+    const tokenRatio = (domAI.estimatedTokens / vectorTokens).toFixed(1);
+    elements.efficiencyMultiplier.textContent = `${sizeRatio}x меншу вагу та ${tokenRatio}x менше токенів`;
 
     benchmarkEngine.generateReport();
     window.soundEffects?.playSuccess();
@@ -158,7 +158,7 @@ function updateStatistics(vectorAI, domAI, figmaAI) {
   const vectorSize = benchmarkResults.vector.single.size;
   const domSize = benchmarkResults.dom.single.size;
   const figmaSize = benchmarkResults.figma.single.size;
-  
+
   const totalSavings = (domSize + figmaSize - vectorSize * 2);
   const renderSpeedup = (benchmarkResults.dom.single.time / benchmarkResults.vector.single.time).toFixed(1);
   const aiEfficiency = ((vectorAI.aiFriendlyScore - domAI.aiFriendlyScore) / domAI.aiFriendlyScore * 100).toFixed(0);
@@ -263,93 +263,18 @@ chaosElements.chaosButton?.addEventListener('click', () => {
     chaosElements.arena.style.display = 'block';
     chaosElements.arena.scrollIntoView({ behavior: 'smooth' });
   }
-  setTimeout(() => startSequentialChaos(), 500);
+
+  // Initialize orchestrator on first click
+  if (!window.chaosOrchestrator) {
+    window.chaosOrchestrator = new ChaosOrchestrator();
+    console.log('✅ Enhanced Chaos Mode initialized - Sequential testing ready');
+  }
 });
 
 chaosElements.stopButton?.addEventListener('click', () => {
-  stopChaosMode();
+  // Old stopChaosMode() call removed as part of chaos mode logic removal
 });
 
-async function startSequentialChaos() {
-  if (chaosRunning) return;
-  chaosRunning = true;
-
-  try {
-    chaosElements.chaosButton.disabled = true;
-    chaosElements.stopButton.disabled = false;
-    window.soundEffects?.playStart();
-
-    const diiaRenderer = new DiiaScreenRenderer();
-    const results = {};
-
-    chaosElements.chaosButton.textContent = '📄 Testing DOM...';
-    chaosElements.arena.innerHTML = '<div style="padding:20px;background:#0a0e27;border-radius:12px;margin-bottom:20px"><h3 style="color:#67C3F3;margin-bottom:10px">📄 DOM Rendering</h3><div id="dom-screen-preview" style="background:#1a1f3a;border-radius:8px;padding:10px;overflow-y:auto;max-height:500px"></div><div style="margin-top:10px;font-size:12px;color:#a1a1aa" id="dom-screen-metrics"></div></div>';
-    
-    const domStart = performance.now();
-    const domHtml = diiaRenderer.renderDOM(1);
-    document.getElementById('dom-screen-preview').innerHTML = domHtml;
-    const domTime = performance.now() - domStart;
-    const domSize = new Blob([domHtml]).size;
-    document.getElementById('dom-screen-metrics').textContent = `⏱️ ${domTime.toFixed(2)}ms | 📦 ${(domSize / 1024).toFixed(2)}KB`;
-    results.dom = { time: domTime, size: domSize };
-
-    await new Promise(resolve => setTimeout(resolve, 2000));
-
-    chaosElements.chaosButton.textContent = '🎯 Testing Vector...';
-    chaosElements.arena.innerHTML += '<div style="padding:20px;background:#0a0e27;border-radius:12px;margin-bottom:20px"><h3 style="color:#67C3F3;margin-bottom:10px">🎯 Vector Rendering</h3><div id="vector-screen-preview" style="background:#1a1f3a;border-radius:8px;padding:10px;overflow-y:auto;max-height:500px"></div><div style="margin-top:10px;font-size:12px;color:#a1a1aa" id="vector-screen-metrics"></div></div>';
-    
-    const vectorStart = performance.now();
-    const vectorSvg = diiaRenderer.renderVector(1);
-    document.getElementById('vector-screen-preview').innerHTML = vectorSvg;
-    const vectorTime = performance.now() - vectorStart;
-    const vectorSize = new Blob([vectorSvg]).size;
-    document.getElementById('vector-screen-metrics').textContent = `⏱️ ${vectorTime.toFixed(2)}ms | 📦 ${(vectorSize / 1024).toFixed(2)}KB`;
-    results.vector = { time: vectorTime, size: vectorSize };
-
-    await new Promise(resolve => setTimeout(resolve, 2000));
-
-    chaosElements.chaosButton.textContent = '🎨 Testing Figma...';
-    chaosElements.arena.innerHTML += '<div style="padding:20px;background:#0a0e27;border-radius:12px"><h3 style="color:#67C3F3;margin-bottom:10px">🎨 Figma Export</h3><div id="figma-screen-preview" style="background:#1a1f3a;border-radius:8px;padding:10px;overflow-y:auto;max-height:500px;font-family:monospace;font-size:11px;color:#67C3F3;white-space:pre-wrap;word-break:break-all"></div><div style="margin-top:10px;font-size:12px;color:#a1a1aa" id="figma-screen-metrics"></div></div>';
-    
-    const figmaStart = performance.now();
-    const figmaJson = diiaRenderer.renderFigma(1);
-    document.getElementById('figma-screen-preview').textContent = figmaJson.substring(0, 800) + '...';
-    const figmaTime = performance.now() - figmaStart;
-    const figmaSize = new Blob([figmaJson]).size;
-    document.getElementById('figma-screen-metrics').textContent = `⏱️ ${figmaTime.toFixed(2)}ms | 📦 ${(figmaSize / 1024).toFixed(2)}KB`;
-    results.figma = { time: figmaTime, size: figmaSize };
-
-    await new Promise(resolve => setTimeout(resolve, 1000));
-
-    window.soundEffects?.playSuccess();
-    const speedup = (results.dom.time / results.vector.time).toFixed(1);
-    const sizeReduction = ((results.dom.size - results.vector.size) / results.dom.size * 100).toFixed(0);
-    
-    alert(`📊 DIIA SCREEN RENDERING\n\n📄 DOM: ${results.dom.time.toFixed(2)}ms (${(results.dom.size / 1024).toFixed(2)}KB)\n🎯 Vector: ${results.vector.time.toFixed(2)}ms (${(results.vector.size / 1024).toFixed(2)}KB)\n🎨 Figma: ${results.figma.time.toFixed(2)}ms (${(results.figma.size / 1024).toFixed(2)}KB)\n\n⚡ Vector ${speedup}x faster, ${sizeReduction}% smaller!`);
-
-    chaosElements.chaosButton.textContent = '🌪️ Chaos Mode (Diia Screens)';
-    chaosElements.chaosButton.disabled = false;
-    chaosElements.stopButton.disabled = true;
-    chaosRunning = false;
-  } catch (err) {
-    console.error('❌ Chaos mode error:', err);
-    chaosRunning = false;
-    chaosElements.chaosButton.disabled = false;
-    chaosElements.stopButton.disabled = true;
-  }
-}
-
-function stopChaosMode() {
-  chaosRunning = false;
-  chaosDOM.stop();
-  chaosVector.stop();
-
-  chaosElements.chaosButton.disabled = false;
-  chaosElements.stopButton.disabled = true;
-  chaosElements.chaosButton.textContent = '🌪️ Chaos Mode (10K Particles)';
-
-  console.log('🛑 Chaos mode stopped');
-}
 
 const responsiveTestBtn = document.getElementById('responsive-test');
 if (responsiveTestBtn) {
@@ -363,7 +288,7 @@ if (responsiveTestBtn) {
     const tester = new ResponsiveTester(vectorRenderer, domRenderer);
     const results = tester.testAllBreakpoints(testProps);
     const report = tester.generateReport(results);
-    
+
     console.log(report);
     window.soundEffects?.playSuccess();
     alert(report);
@@ -441,7 +366,7 @@ if (controlPanel) {
 const themeToggle = document.getElementById('theme-toggle');
 if (themeToggle) {
   themeToggle.addEventListener('click', () => {
-    document.documentElement.style.colorScheme = 
+    document.documentElement.style.colorScheme =
       document.documentElement.style.colorScheme === 'light' ? 'dark' : 'light';
     window.soundEffects?.playClick();
   });

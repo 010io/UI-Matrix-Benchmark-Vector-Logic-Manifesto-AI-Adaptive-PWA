@@ -30,6 +30,10 @@ class ChaosMode {
     this.particles = [];
     this.dBuffer = new Array(count);
 
+    // Settings (can be configured via ChaosOrchestrator)
+    this.particleSize = 4; // Default size in pixels
+    this.enable3D = false; // 3D effect toggle
+
     this.width = this.container.clientWidth || 800;
     this.height = this.container.clientHeight || 400;
 
@@ -37,7 +41,7 @@ class ChaosMode {
     if (typeof FPSMeter !== 'undefined') {
       this.fpsMeter = new FPSMeter(fpsDisplayId);
     } else {
-      this.fpsMeter = { tick: () => { }, getFPS: () => 0, recordJsTime: () => {} };
+      this.fpsMeter = { tick: () => { }, getFPS: () => 0, recordJsTime: () => { } };
     }
 
     for (let i = 0; i < count; i++) {
@@ -46,7 +50,8 @@ class ChaosMode {
         y: Math.random() * this.height,
         vx: (Math.random() - 0.5) * 5,
         vy: (Math.random() - 0.5) * 5,
-        color: Math.random() > 0.5 ? '#67C3F3' : '#000000'
+        color: Math.random() > 0.5 ? '#67C3F3' : '#000000',
+        z: this.enable3D ? Math.random() : 0 // Z-depth for 3D effect
       });
     }
 
@@ -61,21 +66,46 @@ class ChaosMode {
       this.particles.forEach(p => {
         const el = document.createElement('div');
         el.style.position = 'absolute';
-        el.style.width = '4px';
-        el.style.height = '4px';
+        el.style.width = this.particleSize + 'px';
+        el.style.height = this.particleSize + 'px';
         el.style.background = p.color;
         el.style.borderRadius = '50%';
-        el.style.transform = `translate3d(${p.x}px, ${p.y}px, 0)`;
+
+        // 3D effect: scale and shadow based on z-depth
+        if (this.enable3D && p.z !== undefined) {
+          const scale = 0.5 + p.z * 0.5; // Scale from 0.5 to 1.0
+          const blur = (1 - p.z) * 4; // More blur if further
+          el.style.transform = `translate3d(${p.x}px, ${p.y}px, 0) scale(${scale})`;
+          el.style.boxShadow = `0 ${blur}px ${blur * 2}px rgba(0,0,0,${p.z * 0.5})`;
+        } else {
+          el.style.transform = `translate3d(${p.x}px, ${p.y}px, 0)`;
+        }
+
         p.element = el;
         fragment.appendChild(el);
       });
       this.container.appendChild(fragment);
 
     } else {
-      this.container.innerHTML = `<svg width="100%" height="100%" viewBox="0 0 ${this.width} ${this.height}" style="overflow: visible;">
-        <path id="chaos-path-${this.rendererType}" fill="none" stroke="#67C3F3" stroke-width="4" stroke-linecap="round" />
-      </svg>`;
-      this.pathElement = this.container.querySelector('path');
+      const svgStart = `<svg width="100%" height="100%" viewBox="0 0 ${this.width} ${this.height}" style="overflow: visible;">`;
+      let particles = '';
+
+      this.particles.forEach(p => {
+        const size = this.particleSize;
+        const r = size / 2;
+
+        if (this.enable3D && p.z !== undefined) {
+          const scale = 0.5 + p.z * 0.5;
+          const opacity = 0.3 + p.z * 0.7;
+          const adjustedSize = size * scale;
+          const adjustedR = adjustedSize / 2;
+          particles += `<circle cx="${p.x}" cy="${p.y}" r="${adjustedR}" fill="${p.color}" opacity="${opacity}"/>`;
+        } else {
+          particles += `<circle cx="${p.x}" cy="${p.y}" r="${r}" fill="${p.color}"/>`;
+        }
+      });
+
+      this.container.innerHTML = svgStart + particles + '</svg>';
     }
   }
 

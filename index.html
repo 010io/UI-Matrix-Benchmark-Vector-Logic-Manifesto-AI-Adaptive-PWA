@@ -174,42 +174,108 @@
       </div>
     </section>
 
-    <!-- Chaos Arena -->
+    <!-- Enhanced Chaos Arena -->
     <section class="chaos-arena" id="chaos-arena" style="display: none;">
-      <h2>⚡ CHAOS MODE: DOM vs Vector Performance</h2>
+      <h2>⚡ Enhanced Chaos Mode: Sequential Performance Testing</h2>
       
-      <div class="chaos-controls">
-        <label for="particle-count">Particles: <span id="particle-value">2000</span></label>
-        <input type="range" id="particle-count" min="100" max="20000" step="100" value="2000">
+      <!-- Settings Panel -->
+      <div class="chaos-settings-panel">
+        <h3>⚙️ Settings</h3>
+        <div class="settings-grid">
+          <div class="setting-group">
+            <label for="particle-count-input">
+              Particles: <span id="particle-count-value">500</span>
+            </label>
+            <input type="range" id="particle-count-input" min="100" max="20000" step="100" value="500">
+            <p class="setting-hint">⚠️ Changing settings will restart the test</p>
+          </div>
+          
+          <div class="setting-group">
+            <label for="speed-input">
+              Speed: <span id="speed-value">1.0x</span>
+            </label>
+            <input type="range" id="speed-input" min="0.5" max="5" step="0.1" value="1.0">
+          </div>
+          
+          <div class="setting-group">
+            <label for="size-input">Particle Size</label>
+            <select id="size-input">
+              <option value="2">Small (2px)</option>
+              <option value="4" selected>Medium (4px)</option>
+              <option value="6">Large (6px)</option>
+              <option value="10">Extra Large (10px)</option>
+            </select>
+          </div>
+          
+          <div class="setting-group">
+            <label for="color-scheme">Color Scheme</label>
+            <select id="color-scheme">
+              <option value="diia" selected>Diia (Black & Blue)</option>
+              <option value="rainbow">Rainbow</option>
+              <option value="monochrome">Monochrome</option>
+            </select>
+          </div>
+          
+          <div class="setting-group">
+            <label>
+              <input type="checkbox" id="enable-3d">
+              Enable 3D Effect
+            </label>
+          </div>
+        </div>
       </div>
       
-      <div class="arena-grid">
-        <div class="arena-panel">
-          <div class="arena-header">
-            <h3>📄 DOM (Individual Divs)</h3>
-            <div class="fps-badge" id="dom-fps">FPS: —</div>
+      <!-- Sequential Test Panel -->
+      <div id="sequential-test-panel" class="sequential-test-panel" style="display: none;">
+        <div class="test-header">
+          <h3 id="current-test-name">Preparing test...</h3>
+          <span id="current-fps" class="fps-display">FPS: --</span>
+        </div>
+        <div class="progress-container">
+          <div id="test-progress" class="progress-bar"></div>
+        </div>
+        <div id="sequential-test-canvas" class="test-canvas"></div>
+      </div>
+      
+      <!-- Comparison Panel -->
+      <div id="comparison-panel" class="comparison-panel" style="display: none;">
+        <h3>📊 Test Results</h3>
+        <div class="comparison-grid">
+          <div class="result-box dom-result">
+            <div class="result-icon">📄</div>
+            <div class="result-label">DOM</div>
+            <div class="result-fps"><span id="dom-avg-fps">--</span> FPS</div>
           </div>
-          <div class="arena-canvas" id="dom-arena"></div>
-          <div class="arena-stats">
-            <span>RAM: <span id="dom-memory">—</span></span>
-            <span>JS Time: <span id="dom-js-time">—</span></span>
+          
+          <div class="result-arrow">→</div>
+          
+          <div class="result-box vector-result">
+            <div class="result-icon">🎯</div>
+            <div class="result-label">Vector</div>
+            <div class="result-fps"><span id="vector-avg-fps">--</span> FPS</div>
           </div>
         </div>
         
-        <div class="arena-panel winner">
-          <div class="arena-header">
-            <h3>🎯 Vector (Single SVG)</h3>
-            <div class="fps-badge" id="vector-fps">FPS: —</div>
-          </div>
-          <div class="arena-canvas" id="vector-arena"></div>
-          <div class="arena-stats">
-            <span>RAM: <span id="vector-memory">—</span></span>
-            <span>JS Time: <span id="vector-js-time">—</span></span>
-          </div>
+        <div class="speedup-display">
+          <span>Performance Gain:</span>
+          <span id="speedup-value" class="speedup-value">--</span>
         </div>
       </div>
       
-      <button id="stop-chaos" class="btn-primary">🛑 Зупинити</button>
+      <!-- Test History -->
+      <div class="test-history">
+        <div class="history-header">
+          <h3>📜 Test History (Session)</h3>
+          <button id="clear-history" class="btn-secondary btn-small">Clear</button>
+        </div>
+        <div id="history-list" class="history-list"></div>
+      </div>
+      
+      <!-- Controls -->
+      <div class="chaos-controls-enhanced">
+        <button id="start-sequential-test" class="btn-primary">🚀 Start Test</button>
+        <button id="stop-sequential-test" class="btn-secondary" disabled>🛑 Stop</button>
+      </div>
     </section>
 
     <!-- Results Grid -->
@@ -449,6 +515,75 @@
       </div>
     </section>
 
+    <!-- Converter Lab Section -->
+    <section class="converter-lab" id="converter-lab">
+      <h2>🧪 Converter Lab: Universal Design Optimizer</h2>
+      
+      <div class="converter-container">
+        <!-- Upload Interface (Diia Style) -->
+        <div class="upload-interface diia-card-style">
+          <div class="diia-header">
+            <h3>Аналіз Дизайну</h3>
+            <p>Завантажте HTML, SVG або JSON файл</p>
+          </div>
+          
+          <div class="upload-area" id="drop-zone">
+            <input type="file" id="file-upload" class="file-input" accept=".html,.svg,.json,.txt" hidden>
+            <div class="upload-content">
+              <div class="upload-icon-large">📂</div>
+              <p class="upload-hint">Перетягніть файл сюди або натисніть для вибору</p>
+              <button class="btn-primary btn-small" onclick="document.getElementById('file-upload').click()">
+                Обрати файл
+              </button>
+            </div>
+          </div>
+
+          <div class="file-info" id="file-info" style="display: none;">
+            <span class="file-name" id="file-name">design.html</span>
+            <span class="file-size" id="file-size">12 KB</span>
+          </div>
+        </div>
+
+        <!-- Analysis Dashboard -->
+        <div class="analysis-dashboard" id="analysis-dashboard" style="display: none;">
+          <div class="dashboard-header">
+            <h3>📊 Результати Аналізу</h3>
+            <div class="score-badge" id="ai-score-badge">AI Score: 0</div>
+          </div>
+
+          <div class="metrics-grid-small">
+            <div class="metric-card">
+              <span class="label">Original Size</span>
+              <span class="value" id="original-size">-</span>
+            </div>
+            <div class="metric-card">
+              <span class="label">Vector Size</span>
+              <span class="value highlight" id="optimized-size">-</span>
+            </div>
+            <div class="metric-card">
+              <span class="label">Reduction</span>
+              <span class="value success" id="size-reduction">-</span>
+            </div>
+            <div class="metric-card">
+              <span class="label">Tokens Saved</span>
+              <span class="value" id="tokens-saved">-</span>
+            </div>
+          </div>
+
+          <div class="preview-comparison">
+            <div class="preview-box">
+              <h4>Original (Preview)</h4>
+              <div id="original-preview" class="preview-content"></div>
+            </div>
+            <div class="preview-box">
+              <h4>Vector Logic (Generated)</h4>
+              <div id="vector-preview-generated" class="preview-content"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
     <!-- Efficiency Summary -->
     <section class="efficiency-summary">
       <h2>🎯 Висновок</h2>
@@ -499,6 +634,9 @@
   <script src="src/generators/dom-renderer.js"></script>
   <script src="src/generators/figma-simulator.js"></script>
   <script src="src/generators/chaos-mode.js"></script>
+  <script src="src/chaos-orchestrator.js"></script>
+  <script src="src/generators/optimizer-engine.js" type="module"></script>
+  <script src="src/converter-lab.js"></script>
   <script src="src/diia-dashboard.js"></script>
   
   <script src="src/benchmark-engine.js"></script>

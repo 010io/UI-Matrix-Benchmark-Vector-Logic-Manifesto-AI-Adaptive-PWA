@@ -41,25 +41,40 @@ class BenchmarkEngine {
    * @returns {Object} Performance metrics
    */
   measureRenderSpeed(renderFn, props = {}) {
-    const sandbox = document.getElementById('benchmark-sandbox') || document.body;
-    sandbox.innerHTML = '';
-
-    const jsStart = performance.now();
-    const output = renderFn(props);
-
-    if (typeof output === 'string') {
-      sandbox.innerHTML = output;
-    } else if (output instanceof Node) {
-      sandbox.appendChild(output);
+    const sandbox = document.getElementById('benchmark-sandbox');
+    if (!sandbox) {
+      console.warn('⚠️ Benchmark sandbox not found! Results may be inaccurate.');
+    } else {
+      sandbox.innerHTML = '';
     }
 
-    const _reflow = sandbox.offsetHeight;
-    const jsEnd = performance.now();
+    performance.mark('render-start');
+    const output = renderFn(props);
+    performance.mark('render-end');
 
-    sandbox.innerHTML = '';
+    // Handle hybrid output (accessibility layer)
+    if (typeof output === 'object' && output.isHybrid) {
+      if (sandbox) {
+        sandbox.innerHTML = output.combined;
+        void sandbox.offsetHeight; // Force reflow
+      }
+    } else {
+      // Plain string output
+      if (sandbox) {
+        sandbox.innerHTML = output;
+        void sandbox.offsetHeight; // Force reflow
+      }
+    }
+
+    const measure = performance.measure('render-time', 'render-start', 'render-end');
+
+    // Clear sandbox after measurement
+    if (sandbox) {
+      sandbox.innerHTML = '';
+    }
 
     return {
-      time: jsEnd - jsStart,
+      time: measure.duration,
       output: output,
       size: this.calculatePayload(output)
     };

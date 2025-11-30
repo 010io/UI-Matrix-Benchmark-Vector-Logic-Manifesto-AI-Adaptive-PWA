@@ -120,6 +120,7 @@ class VectorRenderer {
     // Performance: Pattern cache for repeated renders
     /** @type {Map<string, string>} */
     this.patternCache = new Map();
+    this.maxCacheSize = 50; // Bound cache size
 
     // Statistics
     this.stats = {
@@ -127,6 +128,10 @@ class VectorRenderer {
       cacheHits: 0,
       cacheMisses: 0
     };
+
+    // Accessibility: Track semantic elements for Shadow DOM
+    this.a11yElements = [];
+    this.enableA11y = true; // Enable accessibility layer by default
   }
 
   /**
@@ -254,29 +259,36 @@ class VectorRenderer {
   generateSecurityPattern(width, height, scale = 1) {
     const cacheKey = `pattern_${width}_${height}_${scale}`;
 
+    // Check cache
     if (this.patternCache.has(cacheKey)) {
       this.stats.cacheHits++;
-      return this.patternCache.get(cacheKey);
+      // Move to end (LRU)
+      const val = this.patternCache.get(cacheKey);
+      this.patternCache.delete(cacheKey);
+      this.patternCache.set(cacheKey, val);
+      return val;
     }
 
     this.stats.cacheMisses++;
 
-    const parts = [];
     const spacing = 20 * scale;
     const strokeWidth = 0.5 * scale;
+    const parts = [];
 
+    // Generate diagonal lines
     for (let i = 0; i < width; i += spacing) {
       parts.push(`<path d="M${i} 0 L${i - spacing} ${height}" stroke="white" stroke-width="${strokeWidth}" stroke-opacity="0.1"/>`);
     }
 
     const pattern = parts.join('');
-    
-    if (this.patternCache.size >= 50) {
+
+    // Cache result with size limit
+    if (this.patternCache.size >= this.maxCacheSize) {
       const firstKey = this.patternCache.keys().next().value;
       this.patternCache.delete(firstKey);
     }
-    
     this.patternCache.set(cacheKey, pattern);
+
     return pattern;
   }
 
@@ -309,7 +321,7 @@ class VectorRenderer {
       0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0,
     ];
 
-    const qrParts = [];
+    const parts = [];
     for (let i = 0; i < gridSize && i < 8; i++) {
       for (let j = 0; j < gridSize; j++) {
         const index = i * gridSize + j;
@@ -317,12 +329,12 @@ class VectorRenderer {
         if (pattern[index] === 1) {
           const px = x + j * pixelSize;
           const py = y + i * pixelSize;
-          qrParts.push(`M${px} ${py} h${pixelSize} v${pixelSize} h${-pixelSize} z`);
+          parts.push(`M${px} ${py} h${pixelSize} v${pixelSize} h${-pixelSize} z `);
         }
       }
     }
 
-    return `<path d="${qrParts.join(' ')}" fill="${color}" role="img" aria-label="QR код"/>`;
+    return `<path d="${parts.join('')}" fill="${color}" role="img" aria-label="QR код"/>`;
   }
 
   /**
@@ -527,6 +539,151 @@ class VectorRenderer {
     this.patternCache.clear();
     this.stats.cacheHits = 0;
     this.stats.cacheMisses = 0;
+  }
+
+  /**
+   * Generate Accessibility Layer (Shadow DOM)
+   * Creates invisible semantic HTML overlay for screen readers
+   * 
+   * @param {Object} props - Screen properties
+   * @param {number} [scale=1] - Scale multiplier
+   * @returns {Array} Array of semantic element objects
+   */
+  generateA11yLayer(props = {}, scale = 1) {
+    const width = this.tokens.canvas.width * scale;
+    const P = this.tokens.spacing.md * scale;
+    const cardX = 8 * scale;
+    const cardY = 16 * scale;
+    const cardW = width - (16 * scale);
+    const cardH = (this.tokens.canvas.height * scale) - (32 * scale);
+    const contentX = cardX + P;
+
+    const elements = [];
+
+    // Title (h1) - Main heading
+    elements.push({
+      type: 'h1',
+      text: props.title || 'Завантаження документів',
+      bounds: { x: contentX, y: cardY + (32 * scale), w: cardW - (P * 2), h: 24 * scale },
+      ariaLabel: props.title || 'Заголовок екрану завантаження документів'
+    });
+
+    // Description (p)
+    elements.push({
+      type: 'p',
+      text: props.subtitle || props.description || 'Додайте необхідні документи',
+      bounds: { x: contentX, y: cardY + (56 * scale), w: cardW - (P * 2), h: 24 * scale },
+      ariaLabel: null
+    });
+
+    // Upload Zone (button)
+    const zoneY = cardY + (88 * scale);
+    const zoneH = 120 * scale;
+    const zoneW = cardW - (P * 2);
+
+    elements.push({
+      type: 'button',
+      label: props.buttonText || 'Додати файл',
+      bounds: { x: contentX, y: zoneY, w: zoneW, h: zoneH },
+      role: 'button',
+      ariaLabel: 'Натисніть або перетягніть файл для завантаження документа'
+    });
+
+    // Next Button (button)
+    const btnH = 56 * scale;
+    const btnY = cardY + cardH - btnH - P;
+
+    elements.push({
+      type: 'button',
+      label: 'Далі',
+      bounds: { x: contentX, y: btnY, w: zoneW, h: btnH },
+      role: 'button',
+      ariaLabel: 'Перейти до наступного кроку'
+    });
+
+    return elements;
+  }
+
+  /**
+   * Render Accessibility HTML
+   * Converts semantic element objects into invisible HTML
+   * 
+   * @param {Array} elements - Semantic elements
+   * @param {number} [scale=1] - Scale multiplier
+   * @returns {string} HTML markup
+   */
+  renderA11yHTML(elements, scale = 1) {
+    return elements.map(el => {
+      const style = `
+        position: absolute;
+        left: ${el.bounds.x}px;
+        top: ${el.bounds.y}px;
+        width: ${el.bounds.w}px;
+        height: ${el.bounds.h}px;
+        opacity: 0;
+        pointer-events: all;
+        z-index: 10;
+      `.replace(/\s+/g, ' ').trim();
+
+      switch (el.type) {
+        case 'h1':
+          return `<h1 style="${style}" aria-label="${el.ariaLabel}">${el.text}</h1>`;
+        case 'p':
+          return `<p style="${style}">${el.text}</p>`;
+        case 'button':
+          return `<button style="${style}" aria-label="${el.ariaLabel}" role="${el.role}">${el.label}</button>`;
+        default:
+          return '';
+      }
+    }).join('');
+  }
+
+  /**
+   * Wrap SVG with Accessibility Layer
+   * Creates hybrid output with visual and semantic layers
+   * 
+   * @param {string} svg - SVG markup
+   * @param {string} a11y - Accessibility HTML
+   * @returns {string} Combined markup
+   */
+  wrapWithA11y(svg, a11y) {
+    return `
+      <div class="vector-a11y-container" style="position: relative; width: 100%;">
+        <div class="vector-visual" aria-hidden="true" style="position: relative; z-index: 1; pointer-events: none;">
+          ${svg}
+        </div>
+        <div class="vector-semantic" role="main" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 10;">
+          ${a11y}
+        </div>
+      </div>
+    `.replace(/\s+/g, ' ').replace(/>\s+</g, '><').trim();
+  }
+
+  /**
+   * Render with Accessibility (Enhanced render method)
+   * Returns object with visual, semantic, and combined outputs
+   * 
+   * @param {Object} props - Component properties
+   * @param {number} [scale=1] - Scale multiplier
+   * @returns {Object|string} Hybrid output or plain SVG
+   */
+  renderWithA11y(props = {}, scale = 1) {
+    const svg = this.render(props, scale);
+
+    if (!this.enableA11y) {
+      return svg;
+    }
+
+    const a11yElements = this.generateA11yLayer(props, scale);
+    const a11yHTML = this.renderA11yHTML(a11yElements, scale);
+    const combined = this.wrapWithA11y(svg, a11yHTML);
+
+    return {
+      visual: svg,
+      semantic: a11yHTML,
+      combined: combined,
+      isHybrid: true
+    };
   }
 }
 
