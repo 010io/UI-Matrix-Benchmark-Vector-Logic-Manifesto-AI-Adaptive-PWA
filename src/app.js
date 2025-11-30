@@ -80,7 +80,8 @@ elements.runBenchmark?.addEventListener('click', async () => {
       figma: figmaSimulator
     }, testProps);
 
-    const vectorOutput = vectorRenderer.render(testProps, currentScale);
+    const vectorResult = vectorRenderer.renderWithA11y(testProps, currentScale);
+    const vectorOutput = vectorResult.combined;
     const domOutput = domRenderer.render(testProps, currentScale);
     const figmaOutput = figmaSimulator.render(testProps);
 
